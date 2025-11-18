@@ -22,6 +22,16 @@ export interface GetMovieDetailResponse {
   path?: string;
 }
 
+export interface GetRecommendationsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    data: Movie[];
+  };
+  timestamp?: string;
+  path?: string;
+}
+
 export class MovieService {
   /**
    * Lấy danh sách phim công khai với các filter và pagination
@@ -81,6 +91,26 @@ export class MovieService {
     } catch (error: any) {
       if (process.env.NODE_ENV === "development") {
         console.error("Error fetching movie detail:", {
+          slug,
+          message: error?.message,
+          status: error?.status,
+        });
+      }
+      throw error;
+    }
+  }
+
+  async getRecommendations(slug: string, limit?: number): Promise<Movie[]> {
+    try {
+      const query = limit ? `?limit=${limit}` : "";
+      const response = await apiClient.get<GetRecommendationsResponse>(
+        `/movies/public/${slug}/recommendations${query}`
+      );
+
+      return response?.data?.data ?? [];
+    } catch (error: any) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error fetching recommendations:", {
           slug,
           message: error?.message,
           status: error?.status,
