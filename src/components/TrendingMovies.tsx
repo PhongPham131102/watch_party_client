@@ -90,7 +90,7 @@ export default function TrendingMovies({
   }
 
   return (
-    <section className="space-y-4 px-6 pb-12 pt-8 md:px-12 lg:px-16">
+    <section className="space-y-4 px-6  pt-8 md:px-12 lg:px-16">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white md:text-3xl">{title}</h2>
         <button className="text-sm font-semibold text-cyan-300 hover:text-cyan-200">
