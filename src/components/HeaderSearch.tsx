@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface HeaderSearchProps {
   scrolled: boolean;
@@ -12,6 +13,7 @@ export default function HeaderSearch({ scrolled }: HeaderSearchProps) {
   const [searchValue, setSearchValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const handleSearchClick = () => {
     setIsOpen(true);
@@ -19,6 +21,13 @@ export default function HeaderSearch({ scrolled }: HeaderSearchProps) {
 
   const handleClose = () => {
     setSearchValue("");
+    setIsOpen(false);
+  };
+
+  const handleSubmit = () => {
+    const trimmed = searchValue.trim();
+    if (!trimmed) return;
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
     setIsOpen(false);
   };
 
@@ -84,6 +93,12 @@ export default function HeaderSearch({ scrolled }: HeaderSearchProps) {
               type="text"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
               placeholder="Phim, diễn viên, thể loại..."
               className="pl-10 pr-10 py-2.5 rounded-md bg-black/80 backdrop-blur-md border border-gray-500/30 text-white placeholder:text-white/50 focus:border-gray-400/50 focus:bg-black/90 focus:ring-2 focus:ring-gray-400/20 focus:outline-none transition-all duration-200 shadow-lg"
             />
