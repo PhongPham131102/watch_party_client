@@ -40,12 +40,10 @@ export default function NavMenu({ scrolled }: NavMenuProps) {
                     transition-all duration-300 ease-in-out
                     ${
                       isActive
-                        ? scrolled
-                          ? "text-white"
-                          : "text-black"
+                        ? "text-white"
                         : scrolled
                         ? "text-white/70 hover:text-white"
-                        : "text-black/80 hover:text-black"
+                        : "text-white/90 hover:text-white"
                     }
                     ${
                       isActive

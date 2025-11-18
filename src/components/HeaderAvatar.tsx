@@ -106,11 +106,7 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
         <Avatar className="cursor-pointer">
           <AvatarImage src="/avatar.png" alt="User" />
           <AvatarFallback
-            className={`transition-colors duration-300 ${
-              scrolled
-                ? "bg-white/20 text-white border-white/30"
-                : "bg-black/10 text-black border-black/20"
-            }`}
+            className="transition-colors duration-300 bg-white/20 text-white border-white/30"
           >
             U
           </AvatarFallback>

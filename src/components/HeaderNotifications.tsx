@@ -12,10 +12,6 @@ interface Notification {
   type?: "info" | "success" | "warning";
 }
 
-interface HeaderNotificationsProps {
-  scrolled: boolean;
-}
-
 // Mock data - sau này sẽ lấy từ API
 const mockNotifications: Notification[] = [
   {
@@ -60,9 +56,7 @@ const mockNotifications: Notification[] = [
   },
 ];
 
-export default function HeaderNotifications({
-  scrolled,
-}: HeaderNotificationsProps) {
+export default function HeaderNotifications() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] =
     useState<Notification[]>(mockNotifications);
@@ -111,9 +105,7 @@ export default function HeaderNotifications({
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative p-2 transition-colors duration-300 hover:opacity-70 ${
-          scrolled ? "text-white" : "text-black"
-        }`}
+        className="relative p-2 transition-colors duration-300 hover:opacity-70 text-white"
         aria-label="Thông báo">
         <Bell size={24} />
         {unreadCount > 0 && (

@@ -62,9 +62,7 @@ export default function HeaderSearch({ scrolled }: HeaderSearchProps) {
       {!isOpen ? (
         <button
           onClick={handleSearchClick}
-          className={`p-2 transition-all duration-300 hover:opacity-70 hover:scale-110 ${
-            scrolled ? "text-white" : "text-black"
-          }`}
+          className="p-2 transition-all duration-300 hover:opacity-70 hover:scale-110 text-white"
           aria-label="Mở tìm kiếm"
         >
           <Search size={24} />
