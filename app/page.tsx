@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import HeroSection from "@/src/components/HeroSection";
 import MovieSwiper from "@/src/components/MovieSwiper";
+import TrendingMovies from "@/src/components/TrendingMovies";
 import { useMovieStore } from "@/src/store/movieStore";
 
 export default function Home() {
@@ -13,8 +14,9 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0e0f14]">
       <HeroSection movies={movies.slice(0, 5)} />
+      <TrendingMovies />
       <section className="space-y-10 py-8">
         <MovieSwiper
           title="Phim hành động"
