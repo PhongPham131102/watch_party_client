@@ -81,18 +81,18 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 {/* Title */}
                 <div className="space-y-3">
                   {movie.originalTitle && (
-                    <h2 className="text-4xl font-bold text-cyan-400 drop-shadow-2xl md:text-5xl lg:text-6xl xl:text-7xl">
+                    <h2 className="text-3xl font-bold text-cyan-400 drop-shadow-2xl md:text-4xl lg:text-5xl xl:text-6xl">
                       {movie.originalTitle}
                     </h2>
                   )}
-                  <h1 className="text-3xl font-bold text-white drop-shadow-2xl md:text-4xl lg:text-5xl xl:text-6xl">
+                  <h1 className="text-2xl font-bold text-white drop-shadow-2xl md:text-3xl lg:text-4xl xl:text-5xl">
                     {movie.title}
                   </h1>
                 </div>
 
                 {/* Description */}
                 {movie.description && (
-                  <p className="max-w-2xl text-sm leading-relaxed text-white/95 drop-shadow-lg line-clamp-3 md:text-base lg:text-lg">
+                  <p className="max-w-2xl text-xs leading-relaxed text-white/95 drop-shadow-lg line-clamp-3 md:text-sm lg:text-base">
                     {movie.description}
                   </p>
                 )}
