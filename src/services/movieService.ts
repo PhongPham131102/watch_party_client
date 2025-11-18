@@ -47,10 +47,14 @@ export class MovieService {
         : "/movies/public";
 
       const response = await apiClient.get<GetPublicMoviesResponse>(url);
-
-      return response as GetPublicMoviesResponse;
-    } catch (error) {
-      console.error("Error fetching public movies:", error);
+      return response;
+    } catch (error: any) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error fetching public movies:", {
+          message: error?.message,
+          status: error?.status,
+        });
+      }
       throw error;
     }
   }

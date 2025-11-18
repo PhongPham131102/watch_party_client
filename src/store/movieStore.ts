@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { movieService } from "@/src/services/movieService";
 import type { Movie } from "@/src/types/movie.types";
@@ -61,7 +62,6 @@ export const useMovieStore = create<MovieState>((set, get) => ({
           pagination: response.data.meta,
           isLoading: false,
           error: null,
-          // Cập nhật filters nếu có params mới
           filters: params ? { ...get().filters, ...params } : get().filters,
         });
       } else {
@@ -71,10 +71,15 @@ export const useMovieStore = create<MovieState>((set, get) => ({
         });
       }
     } catch (error: any) {
-      console.error("Error in fetchMovies:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error in fetchMovies:", error);
+      }
       set({
         isLoading: false,
-        error: error?.message || "An error occurred while fetching movies",
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          "An error occurred while fetching movies",
         movies: [],
         pagination: null,
       });
@@ -107,4 +112,3 @@ export const useMovieStore = create<MovieState>((set, get) => ({
     set(initialState);
   },
 }));
-

@@ -37,11 +37,17 @@ export class ApiClient {
           }
         }
 
+        // Log request trong development
+        if (process.env.NODE_ENV === "development") {
+          console.log("API Request:", {
+            method: config.method?.toUpperCase(),
+            url: `${config.baseURL}${config.url}`,
+          });
+        }
+
         return config;
       },
-      (error) => {
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error)
     );
 
     // Response interceptor
@@ -65,20 +71,25 @@ export class ApiClient {
           return new Promise(() => {});
         }
 
-        // Xử lý lỗi 500 - Internal Server Error
-        if (status === 500) {
-          console.error("Server error:", error);
+        // Log lỗi trong development
+        if (process.env.NODE_ENV === "development") {
+          console.error("API request failed:", {
+            url: error?.config?.url,
+            method: error?.config?.method,
+            status: status,
+            message: error?.response?.data?.message || error?.message,
+          });
         }
 
-        // Log lỗi để debug
-        console.error("API request failed:", {
-          url: error?.config?.url,
-          method: error?.config?.method,
-          status: status,
-          message: error?.response?.data?.message || error?.message,
-        });
-
-        throw error;
+        // Tạo error object với thông tin đầy đủ
+        const apiError = new Error(
+          error?.response?.data?.message ||
+            error?.message ||
+            "An error occurred while making the request"
+        ) as any;
+        apiError.status = status;
+        apiError.response = error?.response;
+        throw apiError;
       }
     );
   }
