@@ -150,6 +150,28 @@ body {
   position: relative;
 }
 
+/* Movie Swiper Styles */
+.movie-swiper {
+  overflow: visible !important;
+  width: 100% !important;
+  padding-bottom: 4px !important;
+}
+
+.movie-swiper .swiper-wrapper {
+  display: flex !important;
+  align-items: stretch !important;
+}
+
+.movie-swiper .swiper-slide {
+  height: auto;
+  flex-shrink: 0 !important;
+}
+
+/* Đảm bảo scroll mượt */
+.movie-swiper.swiper-free-mode > .swiper-wrapper {
+  transition-timing-function: ease-out !important;
+}
+
 .swiper-button-prev-custom,
 .swiper-button-next-custom {
   opacity: 0;
@@ -296,4 +318,14 @@ body {
   opacity: 1 !important;
   display: block !important;
   visibility: visible !important;
+}
+
+/* Scrollbar Hide for Movie List */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
