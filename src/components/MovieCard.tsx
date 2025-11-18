@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import Image from "next/image";
 import { Play } from "lucide-react";
@@ -29,8 +30,9 @@ export default function MovieCard({ movie }: MovieCardProps) {
   };
 
   return (
-    <div
-      className="group relative shrink-0 cursor-pointer"
+    <Link
+      href={`/movies/${movie.slug}`}
+      className="group relative block shrink-0 cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}>
       <div className="relative aspect-2/3 w-full overflow-hidden rounded-md bg-gray-800">
@@ -98,6 +100,6 @@ export default function MovieCard({ movie }: MovieCardProps) {
           </span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

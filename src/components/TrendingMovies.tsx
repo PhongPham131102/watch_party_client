@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Carousel,
   CarouselContent,
@@ -25,7 +26,8 @@ function TrendingCard({ movie, rank }: { movie: Movie; rank: number }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div
+    <Link
+      href={`/movies/${movie.slug}`}
       className="group relative flex aspect-2/3 flex-col overflow-hidden rounded-2xl bg-zinc-900 shadow-xl transition hover:-translate-y-1 hover:shadow-2xl cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}>
@@ -70,7 +72,7 @@ function TrendingCard({ movie, rank }: { movie: Movie; rank: number }) {
           {movie.title}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
 

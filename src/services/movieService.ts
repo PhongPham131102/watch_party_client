@@ -14,6 +14,14 @@ export interface GetPublicMoviesResponse {
   path?: string;
 }
 
+export interface GetMovieDetailResponse {
+  success: boolean;
+  message: string;
+  data: Movie;
+  timestamp?: string;
+  path?: string;
+}
+
 export class MovieService {
   /**
    * Lấy danh sách phim công khai với các filter và pagination
@@ -51,6 +59,29 @@ export class MovieService {
     } catch (error: any) {
       if (process.env.NODE_ENV === "development") {
         console.error("Error fetching public movies:", {
+          message: error?.message,
+          status: error?.status,
+        });
+      }
+      throw error;
+    }
+  }
+
+  async getMovieBySlug(slug: string): Promise<Movie> {
+    try {
+      const response = await apiClient.get<GetMovieDetailResponse>(
+        `/movies/public/${slug}`
+      );
+
+      if (!response?.data) {
+        throw new Error("Movie data is invalid");
+      }
+
+      return response.data;
+    } catch (error: any) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error fetching movie detail:", {
+          slug,
           message: error?.message,
           status: error?.status,
         });
