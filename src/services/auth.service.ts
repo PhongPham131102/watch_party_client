@@ -36,6 +36,15 @@ export class AuthService {
       throw error as ApiResponse;
     }
   }
+
+  async logout(): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse>("/auth/logout");
+      return response;
+    } catch (error) {
+      throw error as ApiResponse;
+    }
+  }
 }
 
 export const authService = new AuthService();

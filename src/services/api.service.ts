@@ -15,6 +15,7 @@ export class ApiClient {
         "Content-Type": "application/json",
       },
       timeout: 30000, // 30 seconds
+      withCredentials: true, // Cho phép gửi cookies trong request
     });
 
     // Request interceptor: append timestamp for cache busting (optional)
@@ -30,13 +31,7 @@ export class ApiClient {
           }
         }
 
-
-        if (typeof window !== "undefined") {
-          const token = localStorage.getItem("authToken");
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-          }
-        }
+        // Không cần lấy token từ localStorage nữa vì backend sẽ tự động đọc từ cookies
         return config;
       },
       (error) => Promise.reject(error)
@@ -50,10 +45,12 @@ export class ApiClient {
 
         const status = error?.response?.status;
 
+        // Khi 401, cookies sẽ tự động bị xóa bởi backend hoặc hết hạn
+        // Client chỉ cần redirect hoặc thông báo
         if (typeof window !== "undefined" && status === 401) {
-          localStorage.removeItem("authToken");
+          // Có thể dispatch event để AuthInitProvider biết và logout
+          window.dispatchEvent(new Event('unauthorized'));
         }
-
 
         if (typeof window !== "undefined" && status === 404) {
           window.location.replace("/404");
@@ -83,26 +80,6 @@ export class ApiClient {
 
   async patch<T>(endpoint: string, data?: any): Promise<T> {
     return this.axiosInstance.patch<T>(endpoint, data) as Promise<T>;
-  }
-
-  // Method để set authentication token
-  setAuthToken(token: string | null) {
-    if (token) {
-      this.axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      if (typeof window !== "undefined") {
-        localStorage.setItem("authToken", token);
-      }
-    } else {
-      delete this.axiosInstance.defaults.headers.common["Authorization"];
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("authToken");
-      }
-    }
-  }
-
-  // Method để clear authentication
-  clearAuth() {
-    this.setAuthToken(null);
   }
 }
 

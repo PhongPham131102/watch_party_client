@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { User } from "@/src/types/auth.types";
+import { authService } from "@/src/services/auth.service";
 
 interface AuthState {
     user: User | null;
@@ -10,7 +11,7 @@ interface AuthState {
 
     setUser: (user: User | null) => void;
     setTokens: (accessToken: string, refreshToken: string) => void;
-    logout: () => void;
+    logout: () => Promise<void>;
     openAuthModal: (mode: "login" | "register") => void;
     closeAuthModal: () => void;
     switchAuthMode: () => void;
@@ -30,23 +31,26 @@ export const useAuthStore = create<AuthState>((set) => ({
         }),
 
     setTokens: (accessToken, refreshToken) => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem("accessToken", accessToken);
-            localStorage.setItem("refreshToken", refreshToken);
-        }
+        // Backend đã lưu tokens vào httpOnly cookies
+        // Client không cần lưu gì cả, chỉ cập nhật state
         set({ accessToken, isAuthenticated: true });
     },
 
-    logout: () => {
-        if (typeof window !== "undefined") {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
+    logout: async () => {
+        try {
+            // Gọi API logout để backend xóa cookies
+            await authService.logout();
+        } catch (error) {
+            // Nếu lỗi cũng vẫn clear state client
+            console.error("Logout error:", error);
+        } finally {
+            // Clear state
+            set({
+                user: null,
+                accessToken: null,
+                isAuthenticated: false,
+            });
         }
-        set({
-            user: null,
-            accessToken: null,
-            isAuthenticated: false,
-        });
     },
 
     openAuthModal: (mode) =>
