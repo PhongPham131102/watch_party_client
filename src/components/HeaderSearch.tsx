@@ -4,11 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-interface HeaderSearchProps {
-  scrolled: boolean;
-}
-
-export default function HeaderSearch({ scrolled }: HeaderSearchProps) {
+export default function HeaderSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -72,8 +68,7 @@ export default function HeaderSearch({ scrolled }: HeaderSearchProps) {
         <button
           onClick={handleSearchClick}
           className="p-2 transition-all duration-300 hover:opacity-70 hover:scale-110 text-white"
-          aria-label="Mở tìm kiếm"
-        >
+          aria-label="Mở tìm kiếm">
           <Search size={24} />
         </button>
       ) : (
@@ -82,8 +77,7 @@ export default function HeaderSearch({ scrolled }: HeaderSearchProps) {
             className="relative w-full"
             style={{
               animation: "slideInRight 0.3s ease-out",
-            }}
-          >
+            }}>
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 z-10 transition-colors duration-200"
               size={18}
@@ -106,8 +100,7 @@ export default function HeaderSearch({ scrolled }: HeaderSearchProps) {
               <button
                 onClick={handleClose}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-all duration-200 hover:scale-110"
-                aria-label="Xóa tìm kiếm"
-              >
+                aria-label="Xóa tìm kiếm">
                 <X size={16} className="text-white/70" />
               </button>
             )}

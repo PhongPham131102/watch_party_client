@@ -17,7 +17,7 @@ export default function AuthModal() {
 
     return (
         <Dialog open={isAuthModalOpen} onOpenChange={closeAuthModal}>
-            <DialogContent className="sm:max-w-md bg-[#0e0f14] border-white/10">
+            <DialogContent className="sm:max-w-md bg-[#0e0f14] border-white/10 shadow-[0_0_50px_-12px] shadow-primary/20">
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold text-white">
                         {authModalMode === "login" ? "Đăng nhập" : "Đăng ký"}
@@ -38,7 +38,7 @@ export default function AuthModal() {
                             <button
                                 type="button"
                                 onClick={switchAuthMode}
-                                className="font-semibold text-[#1ed760] hover:underline">
+                                className="font-semibold text-primary hover:underline hover:text-primary/80 transition-colors">
                                 Đăng ký ngay
                             </button>
                         </>
@@ -48,7 +48,7 @@ export default function AuthModal() {
                             <button
                                 type="button"
                                 onClick={switchAuthMode}
-                                className="font-semibold text-[#1ed760] hover:underline">
+                                className="font-semibold text-primary hover:underline hover:text-primary/80 transition-colors">
                                 Đăng nhập
                             </button>
                         </>

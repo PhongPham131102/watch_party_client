@@ -1,3 +1,5 @@
+import { ErrorCode } from "./error.types";
+
 // API Response Types
 export interface ApiResponse {
   success: boolean;
@@ -5,7 +7,7 @@ export interface ApiResponse {
   message: string;
   timestamp?: string;
   path?: string;
-  errorCode?: string;
+  errorCode?: ErrorCode;
 }
 
 // Pagination Meta

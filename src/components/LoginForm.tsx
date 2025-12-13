@@ -77,11 +77,11 @@ export default function LoginForm() {
                             setFormErrors({ ...formErrors, username: undefined });
                         }
                     }}
-                    className="border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:border-[#1ed760] focus-visible:ring-[#1ed760]"
+                    className="border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:border-primary focus-visible:ring-primary"
                     placeholder="Tên đăng nhập của bạn"
                 />
                 {formErrors.username && (
-                    <p className="text-xs text-red-400">{formErrors.username}</p>
+                    <p className="text-xs text-red-500">{formErrors.username}</p>
                 )}
             </div>
 
@@ -99,18 +99,18 @@ export default function LoginForm() {
                             setFormErrors({ ...formErrors, password: undefined });
                         }
                     }}
-                    className="border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:border-[#1ed760] focus-visible:ring-[#1ed760]"
+                    className="border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:border-primary focus-visible:ring-primary"
                     placeholder="Mật khẩu của bạn"
                 />
                 {formErrors.password && (
-                    <p className="text-xs text-red-400">{formErrors.password}</p>
+                    <p className="text-xs text-red-500">{formErrors.password}</p>
                 )}
             </div>
 
             <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#1ed760] text-[#02100a] hover:bg-[#20f072] font-semibold">
+                className="w-full bg-primary text-white hover:bg-primary/90 font-bold transition-all duration-200">
                 {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
         </form>

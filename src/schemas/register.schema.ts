@@ -6,7 +6,7 @@ export const registerSchema = z.object({
         .min(1, "Email là bắt buộc")
         .email("Email không hợp lệ"),
 
-    name: z
+    username: z
         .string()
         .min(3, "Tên đăng nhập phải có ít nhất 3 ký tự")
         .max(20, "Tên đăng nhập không được quá 20 ký tự")
@@ -22,7 +22,14 @@ export const registerSchema = z.object({
         .regex(/[A-Z]/, "Mật khẩu phải có ít nhất 1 chữ hoa")
         .regex(/[a-z]/, "Mật khẩu phải có ít nhất 1 chữ thường")
         .regex(/[0-9]/, "Mật khẩu phải có ít nhất 1 số")
-        .regex(/[^A-Za-z0-9]/, "Mật khẩu phải có ít nhất 1 ký tự đặc biệt")
+        .regex(/[^A-Za-z0-9]/, "Mật khẩu phải có ít nhất 1 ký tự đặc biệt"),
+
+    confirmPassword: z
+        .string()
+        .min(1, "Vui lòng xác nhận mật khẩu"),
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Mật khẩu nhập lại không khớp",
+    path: ["confirmPassword"],
 });
 
-export type RegisterForm = z.infer<typeof registerSchema>;
+export type RegisterFormValues = z.infer<typeof registerSchema>;

@@ -26,7 +26,7 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
       id: "kids",
       label: "Trẻ em",
       icon: (
-        <div className="w-8 h-8 rounded overflow-hidden bg-gradient-to-r from-red-500 via-orange-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 flex items-center justify-center shrink-0">
+        <div className="w-8 h-8 rounded overflow-hidden bg-[linear-gradient(to_right,#ef4444,#f97316,#eab308,#22c55e,#3b82f6,#a855f7)] flex items-center justify-center shrink-0">
           <User className="w-5 h-5 text-white" />
         </div>
       ),
@@ -97,11 +97,21 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
   // Nếu chưa đăng nhập, hiển thị nút đăng nhập
   if (!isAuthenticated) {
     return (
-      <button
-        onClick={() => openAuthModal("login")}
-        className="rounded-lg bg-[#1ed760] px-4 py-2 text-sm font-semibold text-[#02100a] transition hover:bg-[#20f072]">
-        Đăng nhập
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => openAuthModal("register")}
+          className={`rounded-lg px-4 py-2 text-sm font-bold transition-all duration-300 ${scrolled
+            ? "bg-white text-black hover:bg-gray-200 shadow-md"
+            : "bg-white/10 backdrop-blur-md border border-white/50 text-white hover:bg-white hover:text-black hover:border-white"
+            }`}>
+          Đăng ký
+        </button>
+        <button
+          onClick={() => openAuthModal("login")}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 shadow-lg shadow-primary/20">
+          Đăng nhập
+        </button>
+      </div>
     );
   }
 

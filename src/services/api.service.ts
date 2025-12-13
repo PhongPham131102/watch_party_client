@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance } from "axios";
+import { ApiResponse } from "../types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8888/api/v1";
@@ -19,7 +20,7 @@ export class ApiClient {
     // Request interceptor: append timestamp for cache busting (optional)
     this.axiosInstance.interceptors.request.use(
       (config) => {
-        // Thêm timestamp cho các request GET để tránh cache (có thể tùy chỉnh theo nhu cầu)
+
         if (config.method?.toLowerCase() === "get") {
           const params = (config.params || {}) as Record<string, unknown>;
           // Chỉ thêm timestamp nếu không có sẵn
@@ -29,22 +30,13 @@ export class ApiClient {
           }
         }
 
-        // Thêm authentication token nếu có (có thể lấy từ localStorage hoặc store)
+
         if (typeof window !== "undefined") {
           const token = localStorage.getItem("authToken");
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
           }
         }
-
-        // Log request trong development
-        if (process.env.NODE_ENV === "development") {
-          console.log("API Request:", {
-            method: config.method?.toUpperCase(),
-            url: `${config.baseURL}${config.url}`,
-          });
-        }
-
         return config;
       },
       (error) => Promise.reject(error)
@@ -53,43 +45,22 @@ export class ApiClient {
     // Response interceptor
     this.axiosInstance.interceptors.response.use(
       (response) => response.data,
-      (error) => {
+      (error:
+        AxiosError) => {
+
         const status = error?.response?.status;
 
-        // Xử lý lỗi 401 - Unauthorized (có thể redirect đến trang login)
         if (typeof window !== "undefined" && status === 401) {
-          // Xóa token nếu có
           localStorage.removeItem("authToken");
-          // Có thể redirect đến trang login nếu cần
-          // window.location.replace("/login");
         }
 
-        // Xử lý lỗi 404 - Not Found
+
         if (typeof window !== "undefined" && status === 404) {
-          // Redirect sang trang 404 và chặn luồng Promise để không hiển thị modal lỗi
           window.location.replace("/404");
           return new Promise(() => { });
         }
 
-        // Log lỗi trong development
-        if (process.env.NODE_ENV === "development") {
-          console.log("API request failed:", {
-            url: error?.config?.url,
-            method: error?.config?.method,
-            status: status,
-            message: error?.response?.data?.message || error?.message,
-          });
-        }
-
-        // Tạo error object với thông tin đầy đủ
-        const apiError = new Error(
-          error?.response?.data?.message ||
-          error?.message ||
-          "An error occurred while making the request"
-        ) as any;
-        apiError.status = status;
-        apiError.response = error?.response;
-        throw apiError;
+        throw error.response?.data as ApiResponse;
       }
     );
   }

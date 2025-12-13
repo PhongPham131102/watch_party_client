@@ -7,7 +7,7 @@ export interface FormLoginErrors {
 export interface RegisterRequest {
     email: string;
     password: string;
-    name: string;
+    username: string;
     fullName: string;
 }
 export interface User extends BaseEntity {

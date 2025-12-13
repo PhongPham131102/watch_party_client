@@ -1,3 +1,4 @@
+import { ApiResponse } from "../types";
 import { apiClient } from "./api.service";
 import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from "@/src/types/auth.types";
 
@@ -6,17 +7,16 @@ export class AuthService {
         try {
             const response = await apiClient.post<RegisterResponse>("/auth/register", data);
             return response;
-        } catch (error: any) {
-            throw error;
+        } catch (error) {
+            throw error as ApiResponse;
         }
     }
-
     async login(data: LoginRequest): Promise<LoginResponse> {
         try {
             const response = await apiClient.post<LoginResponse>("/auth/login", data);
             return response;
-        } catch (error: any) {
-            throw error;
+        } catch (error) {
+            throw error as ApiResponse;
         }
     }
 }
