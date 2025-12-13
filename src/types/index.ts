@@ -1,1 +1,7 @@
-// Đặt các type chung ở đây để dễ quản lý
+export * from './api.types';
+export * from './genre.types';
+export * from './actor.types';
+export * from './director.types';
+export * from './country.types';
+export * from './movie.types';
+export * from './auth.types';

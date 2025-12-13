@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import type { Movie } from "@/src/types/movie.types";
-import { movieService } from "@/src/services/movieService";
+import { movieService } from "@/src/services/movie.service";
 
 interface MovieRecommendationsState {
   recommendations: Movie[];

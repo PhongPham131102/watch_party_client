@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
-import { movieService } from "@/src/services/movieService";
+import { movieService } from "@/src/services/movie.service";
 import type { Movie } from "@/src/types/movie.types";
 import type { FindMoviesQueryDto, PaginationMeta } from "@/src/types/api.types";
 

@@ -1,51 +1,5 @@
-// Genre, Director, Actor, Country types from API
-export interface Genre {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string | null;
-}
+import { PaginationMeta, Genre, Director, Actor, Country, } from './index';
 
-export interface Director {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  biography?: string | null;
-  profileImageUrl?: string | null;
-  dateOfBirth?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string | null;
-}
-
-export interface Actor {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  biography?: string | null;
-  profileImageUrl?: string | null;
-  dateOfBirth?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string | null;
-}
-
-export interface Country {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  deletedAt?: string | null;
-}
-
-// Movie type based on backend API response (exact match)
 export interface EpisodeQuality {
   quality: string;
   url: string;
@@ -119,3 +73,45 @@ export interface MovieLegacy {
   updatedAt?: string;
 }
 
+// Movies API Response
+export interface MoviesResponse {
+  data: Movie[];
+  meta: PaginationMeta;
+}
+
+// Find Movies Query DTO (matching backend)
+export interface FindMoviesQueryDto {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: 'draft' | 'published' | 'archived';
+  contentType?: 'movie' | 'series';
+  releaseYearFrom?: number;
+  releaseYearTo?: number;
+  durationMinutesFrom?: number;
+  durationMinutesTo?: number;
+  averageRatingFrom?: number;
+  averageRatingTo?: number;
+  totalRatingsFrom?: number;
+  totalRatingsTo?: number;
+  totalViewsFrom?: number;
+  totalViewsTo?: number;
+  genreIds?: string[];
+  genreSlugs?: string[];
+  countryIds?: string[];
+  countrySlugs?: string[];
+  actorIds?: string[];
+  actorSlugs?: string[];
+  directorIds?: string[];
+  directorSlugs?: string[];
+  sortBy?:
+  | 'title'
+  | 'releaseYear'
+  | 'averageRating'
+  | 'totalViews'
+  | 'totalRatings'
+  | 'durationMinutes'
+  | 'createdAt'
+  | 'updatedAt';
+  sortOrder?: 'ASC' | 'DESC';
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { movieService } from "@/src/services/movieService";
+import { movieService } from "@/src/services/movie.service";
 import type { Movie } from "@/src/types/movie.types";
 import type { FindMoviesQueryDto } from "@/src/types/api.types";
 
@@ -46,8 +46,8 @@ export function useMoviesByGenre(
       } catch (err: any) {
         setError(
           err?.response?.data?.message ||
-            err?.message ||
-            "An error occurred while fetching movies"
+          err?.message ||
+          "An error occurred while fetching movies"
         );
       } finally {
         setIsLoading(false);

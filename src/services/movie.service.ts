@@ -1,6 +1,6 @@
-import { apiClient } from "./apiService";
+import { apiClient } from "./api.service";
 import type { Movie } from "@/src/types/movie.types";
-import type { FindMoviesQueryDto, PaginationMeta } from "@/src/types/api.types";
+import type { FindMoviesQueryDto, PaginationMeta } from "@/src/types/index";
 
 // Response interface cho API getPublicMovies
 export interface GetPublicMoviesResponse {
