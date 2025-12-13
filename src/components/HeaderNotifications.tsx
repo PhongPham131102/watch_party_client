@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuthStore } from "../store/auth.store";
 
 interface Notification {
   id: string;
@@ -57,6 +58,10 @@ const mockNotifications: Notification[] = [
 ];
 
 export default function HeaderNotifications() {
+  const { isAuthenticated, user, logout, openAuthModal } = useAuthStore();
+  if (!isAuthenticated)
+    return null;
+
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] =
     useState<Notification[]>(mockNotifications);
@@ -143,45 +148,42 @@ export default function HeaderNotifications() {
               scrollBarClassName="bg-white/10"
               scrollBarThumbClassName="bg-white/30"
             >
-            {notifications.length === 0 ? (
-              <div className="px-4 py-8 text-center text-white/60">
-                Không có thông báo nào
-              </div>
-            ) : (
-              <div className="divide-y divide-white/10">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification.id)}
-                    className={`px-4 py-3 cursor-pointer transition-colors hover:bg-white/5 ${
-                      !notification.read ? "bg-white/5" : ""
-                    }`}>
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`mt-1 h-2 w-2 rounded-full shrink-0 ${
-                          !notification.read ? "bg-primary" : "bg-transparent"
-                        }`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={`text-sm font-medium mb-1 ${
-                            !notification.read ? "text-white" : "text-white/70"
-                          }`}>
-                          {notification.title}
-                        </p>
-                        <p className="text-xs text-white/60 line-clamp-2">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-white/40 mt-1">
-                          {notification.time}
-                        </p>
+              {notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-white/60">
+                  Không có thông báo nào
+                </div>
+              ) : (
+                <div className="divide-y divide-white/10">
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification.id)}
+                      className={`px-4 py-3 cursor-pointer transition-colors hover:bg-white/5 ${!notification.read ? "bg-white/5" : ""
+                        }`}>
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`mt-1 h-2 w-2 rounded-full shrink-0 ${!notification.read ? "bg-primary" : "bg-transparent"
+                            }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-sm font-medium mb-1 ${!notification.read ? "text-white" : "text-white/70"
+                              }`}>
+                            {notification.title}
+                          </p>
+                          <p className="text-xs text-white/60 line-clamp-2">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-white/40 mt-1">
+                            {notification.time}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
           </div>
 
           {notifications.length > 0 && (

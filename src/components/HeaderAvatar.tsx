@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Pencil, ArrowLeftRight, User, HelpCircle } from "lucide-react";
+import { useAuthStore } from "@/src/store/auth.store";
 
 interface HeaderAvatarProps {
   scrolled: boolean;
@@ -18,6 +19,7 @@ interface MenuItem {
 export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { isAuthenticated, user, logout, openAuthModal } = useAuthStore();
 
   const menuItems: MenuItem[] = [
     {
@@ -54,6 +56,7 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
       id: "logout",
       label: "Đăng xuất",
       icon: null,
+      onClick: logout,
     },
   ];
 
@@ -91,6 +94,17 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
     setIsOpen(false);
   };
 
+  // Nếu chưa đăng nhập, hiển thị nút đăng nhập
+  if (!isAuthenticated) {
+    return (
+      <button
+        onClick={() => openAuthModal("login")}
+        className="rounded-lg bg-[#1ed760] px-4 py-2 text-sm font-semibold text-[#02100a] transition hover:bg-[#20f072]">
+        Đăng nhập
+      </button>
+    );
+  }
+
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -98,9 +112,9 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
         className="cursor-pointer transition-opacity duration-300 hover:opacity-80"
         aria-label="Menu người dùng">
         <Avatar className="cursor-pointer">
-          <AvatarImage src="/avatar.png" alt="User" />
+          <AvatarImage src={user?.profile?.avatarUrl || "/avatar.png"} alt="User" />
           <AvatarFallback className="transition-colors duration-300 bg-white/20 text-white border-white/30">
-            U
+            {user?.profile?.fullName?.charAt(0).toUpperCase() || "U"}
           </AvatarFallback>
         </Avatar>
       </button>

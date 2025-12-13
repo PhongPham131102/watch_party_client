@@ -1,5 +1,9 @@
 import { Role, UserProfile, ApiResponse, BaseEntity } from "./index";
 
+export interface FormLoginErrors {
+    username?: string;
+    password?: string;
+}
 export interface RegisterRequest {
     email: string;
     password: string;
@@ -19,4 +23,11 @@ export interface RegisterResponse extends ApiResponse {
         accessToken: string;
         refreshToken: string;
     }
+}
+
+export interface LoginRequest {
+    username: string;
+    password: string;
+}
+export interface LoginResponse extends RegisterResponse {
 }

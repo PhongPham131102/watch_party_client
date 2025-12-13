@@ -68,12 +68,12 @@ export class ApiClient {
         if (typeof window !== "undefined" && status === 404) {
           // Redirect sang trang 404 và chặn luồng Promise để không hiển thị modal lỗi
           window.location.replace("/404");
-          return new Promise(() => {});
+          return new Promise(() => { });
         }
 
         // Log lỗi trong development
         if (process.env.NODE_ENV === "development") {
-          console.error("API request failed:", {
+          console.log("API request failed:", {
             url: error?.config?.url,
             method: error?.config?.method,
             status: status,
@@ -84,8 +84,8 @@ export class ApiClient {
         // Tạo error object với thông tin đầy đủ
         const apiError = new Error(
           error?.response?.data?.message ||
-            error?.message ||
-            "An error occurred while making the request"
+          error?.message ||
+          "An error occurred while making the request"
         ) as any;
         apiError.status = status;
         apiError.response = error?.response;
