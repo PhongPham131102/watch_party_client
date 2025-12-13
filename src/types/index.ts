@@ -5,3 +5,5 @@ export * from './director.types';
 export * from './country.types';
 export * from './movie.types';
 export * from './auth.types';
+export * from './role.types';
+export * from './profile.types';

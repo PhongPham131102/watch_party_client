@@ -6,7 +6,6 @@ export interface ApiResponse {
   timestamp?: string;
   path?: string;
   errorCode?: string;
-
 }
 
 // Pagination Meta
@@ -17,4 +16,8 @@ export interface PaginationMeta {
   totalPages: number;
 }
 
-
+export interface BaseEntity {
+  createdAt: Date;
+  updatedAt: Date;
+  id: string;
+}
