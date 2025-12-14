@@ -18,11 +18,11 @@ export default function SocketProvider({
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log("🔌 User đăng nhập, đang kết nối socket...");
-      socketService.connect();
+      socketService.connect("base");
     } else {
-      if (socketService.isSocketConnected()) {
+      if (socketService.isConnected("base")) {
         console.log("🔌 User logout, đang ngắt kết nối socket...");
-        socketService.disconnect();
+        socketService.disconnect("base");
       }
     }
   }, [isAuthenticated, user]);

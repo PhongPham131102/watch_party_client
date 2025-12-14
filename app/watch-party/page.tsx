@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import {
   Film,
@@ -17,6 +25,8 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
@@ -27,6 +37,11 @@ function WatchPartyContent() {
   const router = useRouter();
   const [roomCode, setRoomCode] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [roomName, setRoomName] = useState("");
+  const [roomType, setRoomType] = useState<"public" | "private">("public");
+  const [roomPassword, setRoomPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const { user } = useAuthStore();
   const roomsPerPage = 8;
 
@@ -189,8 +204,24 @@ function WatchPartyContent() {
   };
 
   const handleCreateRoom = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  const handleSubmitCreateRoom = () => {
+    if (!roomName.trim()) return;
+    if (roomType === "private" && !roomPassword.trim()) return;
+
     // Logic tạo room mới
     const newRoomId = Math.random().toString(36).substring(7);
+    // TODO: Send roomName, roomType, roomPassword to backend
+    console.log({ roomName, roomType, roomPassword });
+
+    // Reset form
+    setRoomName("");
+    setRoomType("public");
+    setRoomPassword("");
+    setIsCreateModalOpen(false);
+
     router.push(`/watch-party/room/${newRoomId}`);
   };
 
@@ -418,7 +449,7 @@ function WatchPartyContent() {
             </div>
             <Button
               onClick={handleCreateRoom}
-              className="bg-linear-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white">
+              className="bg-primary hover:bg-primary/90 text-white">
               <Plus className="w-4 h-4 mr-2" />
               Tạo Phòng Mới
             </Button>
@@ -485,7 +516,7 @@ function WatchPartyContent() {
 
               <Button
                 onClick={handleCreateRoom}
-                className="bg-linear-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white">
+                className="bg-primary hover:bg-primary/90 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Tạo Phòng Đầu Tiên
               </Button>
@@ -513,7 +544,7 @@ function WatchPartyContent() {
                     onClick={() => handlePageChange(page)}
                     className={`${
                       currentPage === page
-                        ? "bg-linear-to-r from-red-500 to-orange-500 text-white border-0 shadow-lg shadow-red-500/50"
+                        ? "bg-primary text-white border-0"
                         : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-red-500/30 text-white"
                     } transition-all duration-300`}>
                     {page}
@@ -533,6 +564,147 @@ function WatchPartyContent() {
           )}
         </div>
       </section>
+
+      {/* Create Room Modal */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-[#0a0a0f] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
+              Tạo Phòng Mới
+            </DialogTitle>
+            <DialogDescription className="text-white/60">
+              Điền thông tin để tạo phòng xem phim cùng bạn bè
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Room Name */}
+            <div className="space-y-2">
+              <Label htmlFor="room-name" className="text-white/90">
+                Tên phòng <span className="text-red-400">*</span>
+              </Label>
+              <Input
+                id="room-name"
+                placeholder="Nhập tên phòng..."
+                value={roomName}
+                onChange={(e) => setRoomName(e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-red-500/50 focus:ring-red-500/20"
+              />
+            </div>
+
+            {/* Room Type */}
+            <div className="space-y-3">
+              <Label className="text-white/90">
+                Loại phòng <span className="text-red-400">*</span>
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRoomType("public")}
+                  className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                    roomType === "public"
+                      ? "border-red-500 bg-red-500/10"
+                      : "border-white/10 bg-white/5 hover:border-white/20"
+                  }`}>
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      roomType === "public"
+                        ? "border-red-500"
+                        : "border-white/30"
+                    }`}>
+                    {roomType === "public" && (
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    )}
+                  </div>
+                  <div className="flex-1 text-left">
+                    <span className="font-medium text-white">Công khai</span>
+                    <p className="text-xs text-white/50 mt-1">
+                      Mọi người có thể tham gia
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRoomType("private")}
+                  className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                    roomType === "private"
+                      ? "border-red-500 bg-red-500/10"
+                      : "border-white/10 bg-white/5 hover:border-white/20"
+                  }`}>
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      roomType === "private"
+                        ? "border-red-500"
+                        : "border-white/30"
+                    }`}>
+                    {roomType === "private" && (
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    )}
+                  </div>
+                  <div className="flex-1 text-left">
+                    <span className="font-medium text-white">Riêng tư</span>
+                    <p className="text-xs text-white/50 mt-1">
+                      Cần mật khẩu để vào
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Password (only for private rooms) */}
+            {roomType === "private" && (
+              <div className="space-y-2">
+                <Label htmlFor="room-password" className="text-white/90">
+                  Mật khẩu <span className="text-red-400">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="room-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Nhập mật khẩu phòng..."
+                    value={roomPassword}
+                    onChange={(e) => setRoomPassword(e.target.value)}
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-red-500/50 focus:ring-red-500/20 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors">
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-white/50">
+                  Bạn bè sẽ cần mật khẩu này để tham gia phòng
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(false)}
+              className="bg-white/5 border-white/10 text-white hover:bg-white/10">
+              Hủy
+            </Button>
+            <Button
+              onClick={handleSubmitCreateRoom}
+              disabled={
+                !roomName.trim() ||
+                (roomType === "private" && !roomPassword.trim())
+              }
+              className="bg-primary hover:bg-primary/90 text-white disabled:opacity-50 disabled:cursor-not-allowed">
+              <Plus className="w-4 h-4 mr-2" />
+              Tạo Phòng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
