@@ -32,7 +32,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     setTokens: (accessToken, refreshToken) => {
         // Backend đã lưu tokens vào httpOnly cookies
-        // Client không cần lưu gì cả, chỉ cập nhật state
+        // Lưu flag vào localStorage để biết user đã đăng nhập
+        if (typeof window !== "undefined") {
+            localStorage.setItem("hasAuth", "true");
+        }
         set({ accessToken, isAuthenticated: true });
     },
 
@@ -44,6 +47,10 @@ export const useAuthStore = create<AuthState>((set) => ({
             // Nếu lỗi cũng vẫn clear state client
             console.error("Logout error:", error);
         } finally {
+            // Xóa flag khỏi localStorage
+            if (typeof window !== "undefined") {
+                localStorage.removeItem("hasAuth");
+            }
             // Clear state
             set({
                 user: null,

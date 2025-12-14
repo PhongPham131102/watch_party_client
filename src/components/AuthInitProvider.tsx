@@ -8,17 +8,14 @@ export default function AuthInitProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading } = useAuthInitialize();
+  const { isInitialized } = useAuthInitialize();
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Đang tải...</p>
-        </div>
-      </div>
-    );
+  // Không hiển thị loading screen nữa
+  // Chỉ chờ kiểm tra cookie xong (rất nhanh) rồi render ngay
+  // Nếu có cookie thì user được set, không có thì để mặc định chưa đăng nhập
+  if (!isInitialized) {
+    // Return null hoặc skeleton nhỏ gọn nếu cần
+    return null;
   }
 
   return <>{children}</>;
