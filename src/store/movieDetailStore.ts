@@ -36,5 +36,3 @@ export const useMovieDetailStore = create<MovieDetailState>((set) => ({
     set({ movie: null, isLoading: false, error: null });
   },
 }));
-
-
