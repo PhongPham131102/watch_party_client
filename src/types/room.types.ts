@@ -23,3 +23,18 @@ export interface CreateRoomRequest {
 export interface CreateRoomResponse extends ApiResponse {
   data: Room;
 }
+
+export interface CheckRoomResponse extends ApiResponse {
+  data: Room & {
+    isOwner: boolean;
+  };
+}
+
+export interface VerifyRoomPasswordRequest {
+  password: string;
+}
+export interface VerifyRoomPasswordResponse extends ApiResponse {
+  data: {
+    isAuthenticated: boolean;
+  };
+}
