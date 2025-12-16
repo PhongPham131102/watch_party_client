@@ -31,6 +31,29 @@ export interface MemberRemovedEvent {
   timestamp: string;
 }
 
+export interface UserKickedEvent {
+  userId: string;
+  kickedBy: string;
+  reason: string;
+}
+
+export interface UserRoleChangedEvent {
+  userId: string;
+  newRole: string;
+  changedBy: string;
+}
+
+export interface KickUserResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ChangeUserRoleResponse {
+  success: boolean;
+  message: string;
+  newRole: string;
+}
+
 export interface JoinRoomResponse {
   success: boolean;
   lastestMessages: RoomMessage[];
@@ -191,6 +214,71 @@ class RoomSocketService {
 
   offMemberAdded(): void {
     this.socket?.off("memberAdded");
+  }
+
+  onUserKicked(callback: (data: UserKickedEvent) => void): void {
+    this.socket?.on("userKicked", callback);
+  }
+
+  offUserKicked(): void {
+    this.socket?.off("userKicked");
+  }
+
+  onUserRoleChanged(callback: (data: UserRoleChangedEvent) => void): void {
+    this.socket?.on("userRoleChanged", callback);
+  }
+
+  offUserRoleChanged(): void {
+    this.socket?.off("userRoleChanged");
+  }
+
+  async kickUser(
+    roomCode: string,
+    targetUserId: string
+  ): Promise<KickUserResponse> {
+    if (!this.socket?.connected) {
+      throw new Error("Socket not connected");
+    }
+
+    return new Promise((resolve, reject) => {
+      this.socket!.emit(
+        "kickUser",
+        { roomCode, targetUserId },
+        (response: KickUserResponse) => {
+          console.log("Kick user response:", response);
+          if (response.success) {
+            resolve(response);
+          } else {
+            reject(new Error("Failed to kick user"));
+          }
+        }
+      );
+    });
+  }
+
+  async changeUserRole(
+    roomCode: string,
+    targetUserId: string,
+    newRole: string
+  ): Promise<ChangeUserRoleResponse> {
+    if (!this.socket?.connected) {
+      throw new Error("Socket not connected");
+    }
+
+    return new Promise((resolve, reject) => {
+      this.socket!.emit(
+        "changeUserRole",
+        { roomCode, targetUserId, newRole },
+        (response: ChangeUserRoleResponse) => {
+          console.log("Change role response:", response);
+          if (response.success) {
+            resolve(response);
+          } else {
+            reject(new Error("Failed to change role"));
+          }
+        }
+      );
+    });
   }
 
   removeAllListeners(): void {

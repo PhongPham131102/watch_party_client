@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useRoomStore } from "@/src/store/room.store";
@@ -15,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+
 import {
   Eye,
   EyeOff,
@@ -28,6 +30,7 @@ import {
   Crown,
   UserCog,
   Film,
+  User,
 } from "lucide-react";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -44,6 +47,8 @@ import {
   type UserJoinedEvent,
   type UserLeftEvent,
   type MemberRemovedEvent,
+  type UserKickedEvent,
+  type UserRoleChangedEvent,
 } from "@/src/services/room-socket.service";
 import { RoomMessage, TypeMessage } from "@/src/types/room-message.types";
 
@@ -75,6 +80,7 @@ function RoomDetailPageContent() {
     removeMember,
     addMember,
     loadMoreMessages,
+    updateMemberRole,
   } = useRoomStore();
 
   const [password, setPassword] = useState("");
@@ -86,6 +92,9 @@ function RoomDetailPageContent() {
   const [onlineMembers, setOnlineMembers] = useState<UserJoinedEvent[]>([]);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [showMemberMenu, setShowMemberMenu] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,6 +157,24 @@ function RoomDetailPageContent() {
           addMember(data);
         });
 
+        // Listen for user kicked
+        roomSocketService.onUserKicked((data: UserKickedEvent) => {
+          console.log("User kicked:", data);
+          if (data.userId === currentUser?.id) {
+            toast.error("Bạn đã bị kick khỏi phòng");
+            router.push("/watch-party");
+          }
+        });
+
+        // Listen for user role changed
+        roomSocketService.onUserRoleChanged((data: UserRoleChangedEvent) => {
+          console.log("User role changed:", data);
+          updateMemberRole(data.userId, data.newRole);
+          if (data.userId === currentUser?.id) {
+            toast.info(`Quyền của bạn đã được thay đổi thành ${data.newRole}`);
+          }
+        });
+
         // Join room and get initial data from response
         const response = await roomSocketService.joinRoom(room.code);
         console.log("Join room success:", response);
@@ -180,8 +207,20 @@ function RoomDetailPageContent() {
       roomSocketService.offNewMessage();
       roomSocketService.offMemberRemoved();
       roomSocketService.offMemberAdded();
+      roomSocketService.offUserKicked();
+      roomSocketService.offUserRoleChanged();
     };
-  }, [room, isVerified, setRoomData, addMessage, removeMember, addMember]);
+  }, [
+    room,
+    isVerified,
+    setRoomData,
+    addMessage,
+    removeMember,
+    addMember,
+    updateMemberRole,
+    currentUser,
+    router,
+  ]);
 
   // Auto scroll to bottom when new messages arrive or switch to chat tab
   useEffect(() => {
@@ -295,6 +334,40 @@ function RoomDetailPageContent() {
     }
   };
 
+  const handleKickUser = async (userId: string) => {
+    if (!room || actionLoading) return;
+
+    setActionLoading(true);
+    try {
+      await roomSocketService.kickUser(room.code, userId);
+      toast.success("Đã kick người dùng");
+      setShowMemberMenu(false);
+      setSelectedMember(null);
+    } catch (error: any) {
+      console.error("Failed to kick user:", error);
+      toast.error(error?.message || "Không thể kick người dùng");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleChangeRole = async (userId: string, newRole: string) => {
+    if (!room || actionLoading) return;
+
+    setActionLoading(true);
+    try {
+      await roomSocketService.changeUserRole(room.code, userId, newRole);
+      toast.success(`Đã thay đổi quyền thành ${newRole}`);
+      setShowMemberMenu(false);
+      setSelectedMember(null);
+    } catch (error: any) {
+      console.error("Failed to change role:", error);
+      toast.error(error?.message || "Không thể thay đổi quyền");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Handle load more messages when scrolling to top
   useEffect(() => {
     if (activeTab !== "chat") return;
@@ -302,7 +375,7 @@ function RoomDetailPageContent() {
     const scrollContainer = scrollAreaRef.current?.querySelector(
       "[data-radix-scroll-area-viewport]"
     );
-    
+
     if (!scrollContainer) {
       console.log("ScrollArea viewport not found!");
       return;
@@ -330,12 +403,18 @@ function RoomDetailPageContent() {
     };
 
     scrollContainer.addEventListener("scroll", handleScroll);
-    
+
     return () => {
       console.log("Removing scroll listener");
       scrollContainer.removeEventListener("scroll", handleScroll);
     };
-  }, [activeTab, loadingMoreMessages, hasMoreMessages, room, handleLoadMoreMessages]);
+  }, [
+    activeTab,
+    loadingMoreMessages,
+    hasMoreMessages,
+    room,
+    handleLoadMoreMessages,
+  ]);
 
   if (loading) {
     return (
@@ -553,12 +632,12 @@ function RoomDetailPageContent() {
                           className="text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <Users size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
-                            Members
+                            Members ({members.length})
                           </span>
                         </TabsTrigger>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Danh sách thành viên</p>
+                        <p>Danh sách thành viên ({members.length})</p>
                       </TooltipContent>
                     </Tooltip>
 
@@ -652,7 +731,7 @@ function RoomDetailPageContent() {
                                 <div
                                   key={message.id}
                                   className="flex justify-center">
-                                  <span className="text-xs text-white/40 bg-white/5 px-3 py-1 rounded-full">
+                                  <span className="text-xs text-white/40 text-center bg-white/5 px-3 py-1 rounded-full">
                                     {message.content}
                                   </span>
                                 </div>
@@ -826,16 +905,23 @@ function RoomDetailPageContent() {
                                               </p>
                                             </div>
                                           </div>
-                                          {isOwner && role !== "owner" && (
-                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                              <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-8 w-8 text-white/60 hover:text-white">
-                                                <MoreVertical size={16} />
-                                              </Button>
-                                            </div>
-                                          )}
+                                          {isOwner &&
+                                            role !== "owner" &&
+                                            memberUser?.id !==
+                                              currentUser?.id && (
+                                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button
+                                                  size="icon"
+                                                  variant="ghost"
+                                                  onClick={() => {
+                                                    setSelectedMember(member);
+                                                    setShowMemberMenu(true);
+                                                  }}
+                                                  className="h-8 w-8 text-white/60 hover:text-white">
+                                                  <MoreVertical size={16} />
+                                                </Button>
+                                              </div>
+                                            )}
                                         </div>
                                       );
                                     })}
@@ -1028,6 +1114,81 @@ function RoomDetailPageContent() {
           </div>
         </div>
       </div>
+
+      {/* Member Management Dialog */}
+      <Dialog open={showMemberMenu} onOpenChange={setShowMemberMenu}>
+        <DialogContent className="sm:max-w-[425px] bg-[#0a0a0f] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">
+              Quản lý thành viên
+            </DialogTitle>
+            <DialogDescription className="text-white/60">
+              {selectedMember &&
+              typeof selectedMember.user === "object" &&
+              selectedMember.user
+                ? `Hành động với ${selectedMember.user.username}`
+                : "Chọn hành động"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            {/* Change Role Section */}
+            <div className="space-y-2">
+              <Label className="text-white text-sm font-medium">
+                Thay đổi quyền hạn
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  onClick={() =>
+                    selectedMember &&
+                    typeof selectedMember.user === "object" &&
+                    selectedMember.user &&
+                    handleChangeRole(selectedMember.user.id, "moderator")
+                  }
+                  disabled={
+                    actionLoading || selectedMember?.role === "moderator"
+                  }
+                  className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 disabled:opacity-50">
+                  <UserCog size={16} className="mr-2" />
+                  Moderator
+                </Button>
+                <Button
+                  onClick={() =>
+                    selectedMember &&
+                    typeof selectedMember.user === "object" &&
+                    selectedMember.user &&
+                    handleChangeRole(selectedMember.user.id, "member")
+                  }
+                  disabled={actionLoading || selectedMember?.role === "member"}
+                  className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 disabled:opacity-50">
+                  <User size={16} className="mr-2" />
+                  Member
+                </Button>
+              </div>
+            </div>
+
+            <div className="border-t border-white/10 my-4"></div>
+
+            {/* Kick User Section */}
+            <div className="space-y-2">
+              <Label className="text-white text-sm font-medium">
+                Hành động nguy hiểm
+              </Label>
+              <Button
+                onClick={() =>
+                  selectedMember &&
+                  typeof selectedMember.user === "object" &&
+                  selectedMember.user &&
+                  handleKickUser(selectedMember.user.id)
+                }
+                disabled={actionLoading}
+                className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 disabled:opacity-50">
+                {actionLoading ? "Đang xử lý..." : "Kick khỏi phòng"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

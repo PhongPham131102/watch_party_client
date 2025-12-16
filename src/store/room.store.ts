@@ -38,6 +38,7 @@ interface RoomState {
   loadMoreMessages: () => Promise<void>;
   addMember: (member: RoomMember) => void;
   removeMember: (userId: string) => void;
+  updateMemberRole: (userId: string, newRole: string) => void;
   addPlaylistItem: (item: RoomPlaylist) => void;
   removePlaylistItem: (videoId: string) => void;
 }
@@ -227,6 +228,17 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       members: state.members.filter((m) => {
         const memberId = typeof m.user === "string" ? m.user : m.user.id;
         return memberId !== userId;
+      }),
+    })),
+
+  updateMemberRole: (userId, newRole) =>
+    set((state) => ({
+      members: state.members.map((m) => {
+        const memberId = typeof m.user === "string" ? m.user : m.user.id;
+        if (memberId === userId) {
+          return { ...m, role: newRole as any };
+        }
+        return m;
       }),
     })),
 
