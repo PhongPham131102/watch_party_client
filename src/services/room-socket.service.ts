@@ -1,11 +1,9 @@
 import { Socket } from "socket.io-client";
 import { socketService } from "./socket.service";
-
-export interface RoomMember {
-  userId: string;
-  username: string;
-  role: "owner" | "monitor" | "member";
-}
+import { RoomMessage } from "../types/room-message.types";
+import { RoomMember } from "../types/room-member.types";
+import { RoomPlaylist } from "../types/room-playlist.types";
+import { IRoomSetting } from "../types/room-setting.types";
 
 export interface JoinRoomPayload {
   roomCode: string;
@@ -26,6 +24,19 @@ export interface UserLeftEvent {
   username: string;
 }
 
+export interface JoinRoomResponse {
+  success: boolean;
+  lastestMessages: RoomMessage[];
+  members: RoomMember[];
+  playlistItems: RoomPlaylist[];
+  settings: IRoomSetting;
+}
+
+export interface SendMessageResponse {
+  success: boolean;
+  message: RoomMessage;
+}
+
 class RoomSocketService {
   private socket: Socket | null = null;
   private isAuthenticated = false;
@@ -40,11 +51,19 @@ class RoomSocketService {
       this.socket = socketService.connect("room");
 
       // Wait for authenticated event from server
-      this.socket.once("authenticated", (data: { success: boolean; userId: string; username: string; timestamp: string }) => {
-        console.log("Room socket authenticated:", data);
-        this.isAuthenticated = true;
-        resolve(this.socket!);
-      });
+      this.socket.once(
+        "authenticated",
+        (data: {
+          success: boolean;
+          userId: string;
+          username: string;
+          timestamp: string;
+        }) => {
+          console.log("Room socket authenticated:", data);
+          this.isAuthenticated = true;
+          resolve(this.socket!);
+        }
+      );
 
       // Handle connection errors
       this.socket.once("connect_error", (error) => {
@@ -71,13 +90,27 @@ class RoomSocketService {
     }
   }
 
-  async joinRoom(roomCode: string): Promise<void> {
+  async joinRoom(roomCode: string): Promise<JoinRoomResponse> {
     if (!this.socket?.connected) {
       console.log("Socket not connected, connecting first...");
       await this.connect();
     }
     console.log("Emitting joinRoom:", roomCode);
-    this.socket!.emit("joinRoom", { roomCode });
+
+    return new Promise((resolve, reject) => {
+      this.socket!.emit(
+        "joinRoom",
+        { roomCode },
+        (response: JoinRoomResponse) => {
+          console.log("Join room response:", response);
+          if (response.success) {
+            resolve(response);
+          } else {
+            reject(new Error("Failed to join room"));
+          }
+        }
+      );
+    });
   }
 
   leaveRoom(roomCode: string): void {
@@ -95,6 +128,38 @@ class RoomSocketService {
 
   onUserLeft(callback: (data: UserLeftEvent) => void): void {
     this.socket?.on("userLeft", callback);
+  }
+
+  async sendMessage(
+    roomCode: string,
+    content: string
+  ): Promise<SendMessageResponse> {
+    if (!this.socket?.connected) {
+      throw new Error("Socket not connected");
+    }
+
+    return new Promise((resolve, reject) => {
+      this.socket!.emit(
+        "sendMessage",
+        { roomCode, content },
+        (response: SendMessageResponse) => {
+          console.log("Send message response:", response);
+          if (response.success) {
+            resolve(response);
+          } else {
+            reject(new Error("Failed to send message"));
+          }
+        }
+      );
+    });
+  }
+
+  onNewMessage(callback: (data: RoomMessage) => void): void {
+    this.socket?.on("newMessage", callback);
+  }
+
+  offNewMessage(): void {
+    this.socket?.off("newMessage");
   }
 
   offUserJoined(): void {

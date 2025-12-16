@@ -26,7 +26,6 @@ import {
   MoreVertical,
   Crown,
   UserCog,
-  Clock,
   Film,
 } from "lucide-react";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
@@ -44,6 +43,7 @@ import {
   type UserJoinedEvent,
   type UserLeftEvent,
 } from "@/src/services/room-socket.service";
+import { RoomMessage, TypeMessage } from "@/src/types/room-message.types";
 
 function RoomDetailPageContent() {
   const params = useParams<{ slug: string }>();
@@ -57,10 +57,16 @@ function RoomDetailPageContent() {
     error,
     isVerified,
     showPasswordDialog,
+    messages,
+    members,
+    playlistItems,
+    settings,
     fetchRoom,
     clearRoom,
     setShowPasswordDialog,
     verifyPassword,
+    setRoomData,
+    addMessage,
   } = useRoomStore();
 
   const [password, setPassword] = useState("");
@@ -70,6 +76,7 @@ function RoomDetailPageContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [chatMessage, setChatMessage] = useState("");
   const [onlineMembers, setOnlineMembers] = useState<UserJoinedEvent[]>([]);
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     if (!slug) {
@@ -113,8 +120,23 @@ function RoomDetailPageContent() {
           toast.info(`${data.username} đã rời phòng`);
         });
 
-        // Join room after socket is connected
-        await roomSocketService.joinRoom(room.code);
+        // Listen for new messages
+        roomSocketService.onNewMessage((data: RoomMessage) => {
+          addMessage(data);
+        });
+
+        // Join room and get initial data from response
+        const response = await roomSocketService.joinRoom(room.code);
+        console.log("Join room success:", response);
+
+        // Update store with room data from response
+        setRoomData({
+          messages: response.lastestMessages,
+          members: response.members,
+          playlistItems: response.playlistItems,
+          settings: response.settings,
+        });
+        toast.success("Đã tham gia phòng thành công!");
       } catch (error) {
         console.error("Failed to initialize room:", error);
         toast.error("Không thể kết nối đến phòng");
@@ -132,8 +154,9 @@ function RoomDetailPageContent() {
       }
       roomSocketService.offUserJoined();
       roomSocketService.offUserLeft();
+      roomSocketService.offNewMessage();
     };
-  }, [room, isVerified]);
+  }, [room, isVerified, setRoomData, addMessage]);
 
   const handleVerifyPassword = async () => {
     if (!password.trim()) {
@@ -158,6 +181,32 @@ function RoomDetailPageContent() {
     setPassword("");
     setShowPassword(false);
     router.push("/watch-party");
+  };
+
+  const handleSendMessage = async () => {
+    if (!chatMessage.trim() || !room) {
+      return;
+    }
+
+    setSendingMessage(true);
+    try {
+      await roomSocketService.sendMessage(room.code, chatMessage.trim());
+      setChatMessage("");
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      toast.error("Không thể gửi tin nhắn");
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const handleKeyPressSendMessage = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Enter" && !e.shiftKey && !sendingMessage) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   if (loading) {
@@ -424,67 +473,67 @@ function RoomDetailPageContent() {
                     className="flex-1 flex flex-col m-0 data-[state=inactive]:hidden">
                     <ScrollArea className="flex-1 p-4">
                       <div className="space-y-3">
-                        {/* System Message */}
-                        <div className="flex justify-center">
-                          <span className="text-xs text-white/40 bg-white/5 px-3 py-1 rounded-full">
-                            {room.owner.username} created the room
-                          </span>
-                        </div>
-
-                        {/* User Message */}
-                        <div className="flex gap-2">
-                          <Avatar className="w-8 h-8">
-                            <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                              {room.owner.username
-                                .substring(0, 2)
-                                .toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium text-white">
-                                {room.owner.username}
-                              </span>
-                              <span className="text-xs text-white/40">
-                                16:25
-                              </span>
-                            </div>
-                            <div className="bg-white/10 rounded-lg px-3 py-2">
-                              <p className="text-sm text-white/90">
-                                Hello everyone!
-                              </p>
-                            </div>
+                        {messages.length === 0 ? (
+                          <div className="text-center py-8">
+                            <p className="text-white/40 text-sm">
+                              Chưa có tin nhắn nào
+                            </p>
+                            <p className="text-white/30 text-xs mt-1">
+                              Hãy là người đầu tiên gửi tin nhắn!
+                            </p>
                           </div>
-                        </div>
+                        ) : (
+                          messages.map((message) => {
+                            const messageUser =
+                              typeof message.user === "object" && message.user
+                                ? message.user
+                                : null;
+                            const username = messageUser?.username || "Unknown";
+                            const messageTime = new Date(
+                              message.sentAt
+                            ).toLocaleTimeString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
 
-                        {/* Another User Message */}
-                        <div className="flex gap-2">
-                          <Avatar className="w-8 h-8">
-                            <AvatarFallback className="bg-blue-500/20 text-blue-400 text-xs">
-                              PN
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium text-white">
-                                Phong Ngoc
-                              </span>
-                              <span className="text-xs text-white/40">
-                                16:29
-                              </span>
-                            </div>
-                            <div className="bg-white/10 rounded-lg px-3 py-2">
-                              <p className="text-sm text-white/90">Hi!</p>
-                            </div>
-                          </div>
-                        </div>
+                            if (message.type === TypeMessage.SYSTEM) {
+                              return (
+                                <div
+                                  key={message.id}
+                                  className="flex justify-center">
+                                  <span className="text-xs text-white/40 bg-white/5 px-3 py-1 rounded-full">
+                                    {message.content}
+                                  </span>
+                                </div>
+                              );
+                            }
 
-                        {/* System Message */}
-                        <div className="flex justify-center">
-                          <span className="text-xs text-white/40 bg-white/5 px-3 py-1 rounded-full">
-                            User joined the room
-                          </span>
-                        </div>
+                            return (
+                              <div key={message.id} className="flex gap-2">
+                                <Avatar className="w-8 h-8">
+                                  <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                                    {username.substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-sm font-medium text-white">
+                                      {username}
+                                    </span>
+                                    <span className="text-xs text-white/40">
+                                      {messageTime}
+                                    </span>
+                                  </div>
+                                  <div className="bg-white/10 rounded-lg px-3 py-2">
+                                    <p className="text-sm text-white/90">
+                                      {message.content}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
                     </ScrollArea>
                     <div className="p-3 border-t border-white/10">
@@ -494,11 +543,15 @@ function RoomDetailPageContent() {
                           placeholder="Type a message..."
                           value={chatMessage}
                           onChange={(e) => setChatMessage(e.target.value)}
-                          className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                          onKeyDown={handleKeyPressSendMessage}
+                          disabled={sendingMessage}
+                          className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-white/40 disabled:opacity-50"
                         />
                         <Button
                           size="icon"
-                          className="bg-primary hover:bg-primary/90">
+                          onClick={handleSendMessage}
+                          disabled={sendingMessage || !chatMessage.trim()}
+                          className="bg-primary hover:bg-primary/90 disabled:opacity-50">
                           <Send size={18} />
                         </Button>
                       </div>
@@ -511,86 +564,104 @@ function RoomDetailPageContent() {
                     className="flex-1 m-0 data-[state=inactive]:hidden">
                     <ScrollArea className="h-full p-4">
                       <div className="space-y-2">
-                        <div className="text-xs text-white/40 uppercase font-semibold mb-2">
-                          Owner - 1
-                        </div>
-                        <div className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-10 h-10">
-                              <AvatarFallback className="bg-primary/20 text-primary">
-                                {room.owner.username
-                                  .substring(0, 2)
-                                  .toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium text-white flex items-center gap-1">
-                                {room.owner.username}
-                                <Crown size={12} className="text-primary" />
-                              </p>
-                              <p className="text-xs text-white/40">Owner</p>
-                            </div>
+                        {members.length === 0 ? (
+                          <div className="text-center py-8">
+                            <p className="text-white/40 text-sm">
+                              Chưa có thành viên nào
+                            </p>
                           </div>
-                        </div>
+                        ) : (
+                          <>
+                            {/* Group by role */}
+                            {["owner", "admin", "moderator", "member"].map(
+                              (role) => {
+                                const roleMembers = members.filter(
+                                  (m) => m.role === role
+                                );
+                                if (roleMembers.length === 0) return null;
 
-                        <div className="text-xs text-white/40 uppercase font-semibold mb-2 mt-4">
-                          Members - 2
-                        </div>
-                        <div className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg group">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-10 h-10">
-                              <AvatarFallback className="bg-blue-500/20 text-blue-400">
-                                PN
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium text-white">
-                                Phong Ngoc
-                              </p>
-                              <p className="text-xs text-white/40">Member</p>
-                            </div>
-                          </div>
-                          {isOwner && (
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-white/60 hover:text-white">
-                                <MoreVertical size={16} />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
+                                const roleLabel =
+                                  role === "owner"
+                                    ? "Owner"
+                                    : role === "admin"
+                                    ? "Admin"
+                                    : role === "moderator"
+                                    ? "Moderator"
+                                    : "Members";
 
-                        <div className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg group">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-10 h-10">
-                              <AvatarFallback className="bg-green-500/20 text-green-400">
-                                JD
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium text-white flex items-center gap-1">
-                                John Doe
-                                <UserCog
-                                  size={12}
-                                  className="text-orange-400"
-                                />
-                              </p>
-                              <p className="text-xs text-white/40">Monitor</p>
-                            </div>
-                          </div>
-                          {isOwner && (
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-white/60 hover:text-white">
-                                <MoreVertical size={16} />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
+                                return (
+                                  <div key={role}>
+                                    <div className="text-xs text-white/40 uppercase font-semibold mb-2 mt-4 first:mt-0">
+                                      {roleLabel} - {roleMembers.length}
+                                    </div>
+                                    {roleMembers.map((member) => {
+                                      const memberUser =
+                                        typeof member.user === "object" &&
+                                        member.user
+                                          ? member.user
+                                          : null;
+                                      const username =
+                                        memberUser?.username || "Unknown";
+
+                                      return (
+                                        <div
+                                          key={member.id}
+                                          className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg group">
+                                          <div className="flex items-center gap-3">
+                                            <Avatar className="w-10 h-10">
+                                              <AvatarFallback
+                                                className={
+                                                  role === "owner"
+                                                    ? "bg-primary/20 text-primary"
+                                                    : role === "moderator"
+                                                    ? "bg-orange-500/20 text-orange-400"
+                                                    : "bg-blue-500/20 text-blue-400"
+                                                }>
+                                                {username
+                                                  .substring(0, 2)
+                                                  .toUpperCase()}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                              <p className="text-sm font-medium text-white flex items-center gap-1">
+                                                {username}
+                                                {role === "owner" && (
+                                                  <Crown
+                                                    size={12}
+                                                    className="text-primary"
+                                                  />
+                                                )}
+                                                {role === "moderator" && (
+                                                  <UserCog
+                                                    size={12}
+                                                    className="text-orange-400"
+                                                  />
+                                                )}
+                                              </p>
+                                              <p className="text-xs text-white/40 capitalize">
+                                                {role}
+                                              </p>
+                                            </div>
+                                          </div>
+                                          {isOwner && role !== "owner" && (
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-8 w-8 text-white/60 hover:text-white">
+                                                <MoreVertical size={16} />
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              }
+                            )}
+                          </>
+                        )}
                       </div>
                     </ScrollArea>
                   </TabsContent>
@@ -601,60 +672,75 @@ function RoomDetailPageContent() {
                     className="flex-1 m-0 data-[state=inactive]:hidden">
                     <ScrollArea className="h-full p-4">
                       <div className="space-y-3">
-                        {/* Playlist Item */}
-                        <div className="flex gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer">
-                          <div className="relative shrink-0">
-                            <div className="w-32 h-20 bg-linear-to-br from-gray-800 to-gray-900 rounded overflow-hidden">
-                              <img
-                                src="https://via.placeholder.com/150x100"
-                                alt="Movie thumbnail"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-xs text-white">
-                              45:30
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-white truncate">
-                              Movie Title - Episode 1
-                            </h4>
-                            <p className="text-xs text-white/60 mt-1">
-                              Added by {room.owner.username}
+                        {playlistItems.length === 0 ? (
+                          <div className="text-center py-8">
+                            <ListVideo className="w-12 h-12 text-white/20 mx-auto mb-3" />
+                            <p className="text-white/40 text-sm">
+                              Playlist trống
                             </p>
-                            <div className="flex items-center gap-2 mt-2 text-xs text-white/40">
-                              <Clock size={12} />
-                              <span>2 hours ago</span>
-                            </div>
+                            <p className="text-white/30 text-xs mt-1">
+                              Thêm video để bắt đầu xem cùng nhau!
+                            </p>
                           </div>
-                        </div>
+                        ) : (
+                          playlistItems.map((item, index) => {
+                            const video =
+                              typeof item.video === "object" && item.video
+                                ? item.video
+                                : null;
+                            const addedBy =
+                              typeof item.addBy === "object" && item.addBy
+                                ? item.addBy
+                                : null;
 
-                        <div className="flex gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer">
-                          <div className="relative shrink-0">
-                            <div className="w-32 h-20 bg-linear-to-br from-gray-800 to-gray-900 rounded overflow-hidden">
-                              <img
-                                src="https://via.placeholder.com/150x100"
-                                alt="Movie thumbnail"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-xs text-white">
-                              1:23:45
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-white truncate">
-                              Another Movie
-                            </h4>
-                            <p className="text-xs text-white/60 mt-1">
-                              Added by Phong Ngoc
-                            </p>
-                            <div className="flex items-center gap-2 mt-2 text-xs text-white/40">
-                              <Clock size={12} />
-                              <span>1 hour ago</span>
-                            </div>
-                          </div>
-                        </div>
+                            return (
+                              <div
+                                key={`${item.room}-${index}`}
+                                className="flex gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer">
+                                <div className="relative shrink-0">
+                                  <div className="w-32 h-20 bg-linear-to-br from-gray-800 to-gray-900 rounded overflow-hidden">
+                                    {/* {video?.thumbnail ? (
+                                      <img
+                                        src={video.thumbnail}
+                                        alt={video.name || "Video thumbnail"}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <Film
+                                          size={24}
+                                          className="text-white/20"
+                                        />
+                                      </div>
+                                    )} */}
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <Film
+                                        size={24}
+                                        className="text-white/20"
+                                      />
+                                    </div>
+                                  </div>
+                                  {video?.durationMinutes && (
+                                    <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-xs text-white">
+                                      {video.durationMinutes}
+                                    </div>
+                                  )}
+                                  <div className="absolute top-1 left-1 bg-primary/90 px-1.5 py-0.5 rounded text-xs text-white font-semibold">
+                                    #{item.position}
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-sm font-medium text-white truncate">
+                                    {video?.title || "Unknown Video"}
+                                  </h4>
+                                  <p className="text-xs text-white/60 mt-1">
+                                    Added by {addedBy?.username || "Unknown"}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
                     </ScrollArea>
                   </TabsContent>
@@ -669,61 +755,81 @@ function RoomDetailPageContent() {
                           <h3 className="text-sm font-semibold text-white mb-3">
                             Room Settings
                           </h3>
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label className="text-white/80 text-sm">
-                                Maximum Users
-                              </Label>
-                              <Input
-                                type="number"
-                                placeholder="10"
-                                disabled={!isOwner}
-                                className="bg-white/5 border-white/10 text-white disabled:opacity-50"
-                              />
-                              <p className="text-xs text-white/40">
-                                Maximum number of users allowed in the room
+                          {settings ? (
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label className="text-white/80 text-sm">
+                                  Room Type
+                                </Label>
+                                <Input
+                                  type="text"
+                                  value={settings.type}
+                                  disabled
+                                  className="bg-white/5 border-white/10 text-white disabled:opacity-50 capitalize"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label className="text-white/80 text-sm">
+                                  Maximum Users
+                                </Label>
+                                <Input
+                                  type="number"
+                                  value={settings.max_users}
+                                  disabled={!isOwner}
+                                  className="bg-white/5 border-white/10 text-white disabled:opacity-50"
+                                />
+                                <p className="text-xs text-white/40">
+                                  Maximum number of users allowed in the room
+                                </p>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label className="text-white/80 text-sm">
+                                  Max Videos in Playlist
+                                </Label>
+                                <Input
+                                  type="number"
+                                  value={settings.max_video_in_playlist}
+                                  disabled={!isOwner}
+                                  className="bg-white/5 border-white/10 text-white disabled:opacity-50"
+                                />
+                                <p className="text-xs text-white/40">
+                                  Maximum total videos in the playlist
+                                </p>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label className="text-white/80 text-sm">
+                                  Max Videos per User
+                                </Label>
+                                <Input
+                                  type="number"
+                                  value={settings.max_video}
+                                  disabled={!isOwner}
+                                  className="bg-white/5 border-white/10 text-white disabled:opacity-50"
+                                />
+                                <p className="text-xs text-white/40">
+                                  Maximum videos each user can add
+                                </p>
+                              </div>
+
+                              {isOwner && (
+                                <Button className="w-full bg-primary hover:bg-primary/90 mt-4">
+                                  Save Settings
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <p className="text-white/40 text-sm">
+                                Loading settings...
                               </p>
                             </div>
-
-                            <div className="space-y-2">
-                              <Label className="text-white/80 text-sm">
-                                Max Videos in Playlist
-                              </Label>
-                              <Input
-                                type="number"
-                                placeholder="50"
-                                disabled={!isOwner}
-                                className="bg-white/5 border-white/10 text-white disabled:opacity-50"
-                              />
-                              <p className="text-xs text-white/40">
-                                Maximum total videos in the playlist
-                              </p>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label className="text-white/80 text-sm">
-                                Max Videos per User
-                              </Label>
-                              <Input
-                                type="number"
-                                placeholder="5"
-                                disabled={!isOwner}
-                                className="bg-white/5 border-white/10 text-white disabled:opacity-50"
-                              />
-                              <p className="text-xs text-white/40">
-                                Maximum videos each user can add
-                              </p>
-                            </div>
-
-                            {isOwner && (
-                              <Button className="w-full bg-primary hover:bg-primary/90 mt-4">
-                                Save Settings
-                              </Button>
-                            )}
-                          </div>
+                          )}
                         </div>
 
-                        {!isOwner && (
+                        {!isOwner && settings && (
                           <div className="p-3 bg-white/5 rounded-lg border border-white/10">
                             <p className="text-xs text-white/60 text-center">
                               Only room owner can modify settings

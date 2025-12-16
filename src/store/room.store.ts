@@ -2,6 +2,10 @@
 import { create } from "zustand";
 import { Room } from "../types/room.types";
 import { roomService } from "../services/room.service";
+import { RoomMessage } from "../types/room-message.types";
+import { RoomMember } from "../types/room-member.types";
+import { RoomPlaylist } from "../types/room-playlist.types";
+import { IRoomSetting } from "../types/room-setting.types";
 
 interface RoomState {
   currentRoom: Room | null;
@@ -10,6 +14,10 @@ interface RoomState {
   error: string | null;
   isVerified: boolean;
   showPasswordDialog: boolean;
+  messages: RoomMessage[];
+  members: RoomMember[];
+  playlistItems: RoomPlaylist[];
+  settings: IRoomSetting | null;
 
   setCurrentRoom: (room: Room | null, isOwner?: boolean) => void;
   fetchRoom: (slug: string) => Promise<void>;
@@ -18,6 +26,17 @@ interface RoomState {
   setError: (error: string | null) => void;
   setShowPasswordDialog: (show: boolean) => void;
   verifyPassword: (password: string) => Promise<void>;
+  setRoomData: (data: {
+    messages: RoomMessage[];
+    members: RoomMember[];
+    playlistItems: RoomPlaylist[];
+    settings: IRoomSetting;
+  }) => void;
+  addMessage: (message: RoomMessage) => void;
+  addMember: (member: RoomMember) => void;
+  removeMember: (userId: string) => void;
+  addPlaylistItem: (item: RoomPlaylist) => void;
+  removePlaylistItem: (videoId: string) => void;
 }
 
 export const useRoomStore = create<RoomState>((set, get) => ({
@@ -27,6 +46,10 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   error: null,
   isVerified: false,
   showPasswordDialog: false,
+  messages: [],
+  members: [],
+  playlistItems: [],
+  settings: null,
 
   setCurrentRoom: (room, isOwner = false) =>
     set({
@@ -100,6 +123,10 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       error: null,
       isVerified: false,
       showPasswordDialog: false,
+      messages: [],
+      members: [],
+      playlistItems: [],
+      settings: null,
     }),
 
   setLoading: (loading) => set({ loading }),
@@ -110,19 +137,22 @@ export const useRoomStore = create<RoomState>((set, get) => ({
 
   verifyPassword: async (password: string) => {
     const currentRoom = get().currentRoom;
-    
+
     if (!currentRoom?.code) {
       throw new Error("Không tìm thấy mã phòng");
     }
 
     try {
-      const response = await roomService.verifyRoomPassword(currentRoom.code, password);
-      
+      const response = await roomService.verifyRoomPassword(
+        currentRoom.code,
+        password
+      );
+
       // Kiểm tra isAuthenticated từ response
       if (!response.data?.isAuthenticated) {
         throw new Error("Mật khẩu không đúng");
       }
-      
+
       set({
         isVerified: true,
         showPasswordDialog: false,
@@ -131,4 +161,44 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       throw err;
     }
   },
+
+  setRoomData: (data) =>
+    set({
+      messages: data.messages,
+      members: data.members,
+      playlistItems: data.playlistItems,
+      settings: data.settings,
+    }),
+
+  addMessage: (message) =>
+    set((state) => ({
+      messages: [...state.messages, message],
+    })),
+
+  addMember: (member) =>
+    set((state) => ({
+      members: [...state.members, member],
+    })),
+
+  removeMember: (userId) =>
+    set((state) => ({
+      members: state.members.filter((m) => {
+        const memberId = typeof m.user === "string" ? m.user : m.user.id;
+        return memberId !== userId;
+      }),
+    })),
+
+  addPlaylistItem: (item) =>
+    set((state) => ({
+      playlistItems: [...state.playlistItems, item],
+    })),
+
+  removePlaylistItem: (videoId) =>
+    set((state) => ({
+      playlistItems: state.playlistItems.filter((item) => {
+        const itemVideoId =
+          typeof item.video === "string" ? item.video : item.video.id;
+        return itemVideoId !== videoId;
+      }),
+    })),
 }));
