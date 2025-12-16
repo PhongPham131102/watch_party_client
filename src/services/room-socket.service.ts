@@ -24,6 +24,13 @@ export interface UserLeftEvent {
   username: string;
 }
 
+export interface MemberRemovedEvent {
+  userId: string;
+  username: string;
+  roomId: string;
+  timestamp: string;
+}
+
 export interface JoinRoomResponse {
   success: boolean;
   lastestMessages: RoomMessage[];
@@ -168,6 +175,22 @@ class RoomSocketService {
 
   offUserLeft(): void {
     this.socket?.off("userLeft");
+  }
+
+  onMemberRemoved(callback: (data: MemberRemovedEvent) => void): void {
+    this.socket?.on("memberRemoved", callback);
+  }
+
+  offMemberRemoved(): void {
+    this.socket?.off("memberRemoved");
+  }
+
+  onMemberAdded(callback: (data: RoomMember) => void): void {
+    this.socket?.on("memberAdded", callback);
+  }
+
+  offMemberAdded(): void {
+    this.socket?.off("memberAdded");
   }
 
   removeAllListeners(): void {

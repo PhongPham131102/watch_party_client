@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useRoomStore } from "@/src/store/room.store";
+import { useAuthStore } from "@/src/store/auth.store";
 import { toast } from "@/src/utils/toast";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ import {
   roomSocketService,
   type UserJoinedEvent,
   type UserLeftEvent,
+  type MemberRemovedEvent,
 } from "@/src/services/room-socket.service";
 import { RoomMessage, TypeMessage } from "@/src/types/room-message.types";
 
@@ -49,6 +51,8 @@ function RoomDetailPageContent() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const slug = params?.slug as string | undefined;
+
+  const { user: currentUser } = useAuthStore();
 
   const {
     currentRoom: room,
@@ -67,6 +71,8 @@ function RoomDetailPageContent() {
     verifyPassword,
     setRoomData,
     addMessage,
+    removeMember,
+    addMember,
   } = useRoomStore();
 
   const [password, setPassword] = useState("");
@@ -77,6 +83,9 @@ function RoomDetailPageContent() {
   const [chatMessage, setChatMessage] = useState("");
   const [onlineMembers, setOnlineMembers] = useState<UserJoinedEvent[]>([]);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!slug) {
@@ -125,13 +134,25 @@ function RoomDetailPageContent() {
           addMessage(data);
         });
 
+        // Listen for member removed
+        roomSocketService.onMemberRemoved((data: MemberRemovedEvent) => {
+          console.log("Member removed:", data);
+          removeMember(data.userId);
+        });
+
+        // Listen for member added
+        roomSocketService.onMemberAdded((data) => {
+          console.log("Member added:", data);
+          addMember(data);
+        });
+
         // Join room and get initial data from response
         const response = await roomSocketService.joinRoom(room.code);
         console.log("Join room success:", response);
 
         // Update store with room data from response
         setRoomData({
-          messages: response.lastestMessages,
+          messages: response.lastestMessages.reverse(),
           members: response.members,
           playlistItems: response.playlistItems,
           settings: response.settings,
@@ -155,8 +176,70 @@ function RoomDetailPageContent() {
       roomSocketService.offUserJoined();
       roomSocketService.offUserLeft();
       roomSocketService.offNewMessage();
+      roomSocketService.offMemberRemoved();
+      roomSocketService.offMemberAdded();
     };
-  }, [room, isVerified, setRoomData, addMessage]);
+  }, [room, isVerified, setRoomData, addMessage, removeMember, addMember]);
+
+  // Auto scroll to bottom when new messages arrive or switch to chat tab
+  useEffect(() => {
+    if (activeTab === "chat") {
+      // Use setTimeout to ensure DOM is fully rendered
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          const scrollContainer = scrollAreaRef.current.querySelector(
+            "[data-radix-scroll-area-viewport]"
+          );
+          if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          }
+        }
+      }, 100);
+    }
+  }, [messages, activeTab]);
+
+  // Handle load more messages when scrolling to top
+  useEffect(() => {
+    const scrollContainer = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    );
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop } = scrollContainer;
+
+      // Trigger load more when scroll near top (within 50px)
+      if (scrollTop < 50 && !loadingMoreMessages) {
+        handleLoadMoreMessages();
+      }
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll);
+    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+  }, [loadingMoreMessages]);
+
+  const handleLoadMoreMessages = async () => {
+    if (loadingMoreMessages || !room) return;
+
+    setLoadingMoreMessages(true);
+    try {
+      // TODO: Implement load more messages logic here
+      // Example:
+      // const olderMessages = await roomSocketService.loadMoreMessages(room.code, messages[0]?.id);
+      // Add older messages to store
+      console.log("Loading more messages...");
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      toast.info("Đã tải hết tin nhắn");
+    } catch (error) {
+      console.error("Failed to load more messages:", error);
+      toast.error("Không thể tải thêm tin nhắn");
+    } finally {
+      setLoadingMoreMessages(false);
+    }
+  };
 
   const handleVerifyPassword = async () => {
     if (!password.trim()) {
@@ -192,6 +275,10 @@ function RoomDetailPageContent() {
     try {
       await roomSocketService.sendMessage(room.code, chatMessage.trim());
       setChatMessage("");
+      // Keep focus on input after sending with small delay
+      setTimeout(() => {
+        if (chatInputRef.current) chatInputRef.current.focus();
+      }, 100);
     } catch (error) {
       console.error("Failed to send message:", error);
       toast.error("Không thể gửi tin nhắn");
@@ -471,8 +558,15 @@ function RoomDetailPageContent() {
                   <TabsContent
                     value="chat"
                     className="flex-1 flex flex-col m-0 data-[state=inactive]:hidden">
-                    <ScrollArea className="flex-1 p-4">
+                    <ScrollArea
+                      ref={scrollAreaRef}
+                      className="flex-1 max-h-[74vh] p-4">
                       <div className="space-y-3">
+                        {loadingMoreMessages && (
+                          <div className="flex justify-center py-2">
+                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
                         {messages.length === 0 ? (
                           <div className="text-center py-8">
                             <p className="text-white/40 text-sm">
@@ -489,6 +583,7 @@ function RoomDetailPageContent() {
                                 ? message.user
                                 : null;
                             const username = messageUser?.username || "Unknown";
+                            const userId = messageUser?.id || messageUser?.id;
                             const messageTime = new Date(
                               message.sentAt
                             ).toLocaleTimeString("vi-VN", {
@@ -496,6 +591,7 @@ function RoomDetailPageContent() {
                               minute: "2-digit",
                             });
 
+                            // System message
                             if (message.type === TypeMessage.SYSTEM) {
                               return (
                                 <div
@@ -508,14 +604,45 @@ function RoomDetailPageContent() {
                               );
                             }
 
+                            // Check if message is from current user
+                            const isCurrentUser =
+                              userId === currentUser?.id ||
+                              userId === currentUser?.id;
+
+                            // Current user's message - align right
+                            if (isCurrentUser) {
+                              return (
+                                <div
+                                  key={message.id}
+                                  className="flex justify-end">
+                                  <div className="flex flex-col items-end max-w-[75%]">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs text-white/40">
+                                        {messageTime}
+                                      </span>
+                                      <span className="text-sm font-medium text-white">
+                                        Bạn
+                                      </span>
+                                    </div>
+                                    <div className="bg-primary/90 rounded-lg px-3 py-2">
+                                      <p className="text-sm text-white">
+                                        {message.content}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Other user's message - align left
                             return (
                               <div key={message.id} className="flex gap-2">
-                                <Avatar className="w-8 h-8">
-                                  <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                                <Avatar className="w-8 h-8 shrink-0">
+                                  <AvatarFallback className="bg-blue-500/20 text-blue-400 text-xs">
                                     {username.substring(0, 2).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div className="flex-1">
+                                <div className="flex-1 max-w-[75%]">
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-sm font-medium text-white">
                                       {username}
@@ -539,6 +666,7 @@ function RoomDetailPageContent() {
                     <div className="p-3 border-t border-white/10">
                       <div className="flex gap-2">
                         <Input
+                          ref={chatInputRef}
                           type="text"
                           placeholder="Type a message..."
                           value={chatMessage}
