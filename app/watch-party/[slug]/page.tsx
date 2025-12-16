@@ -62,6 +62,7 @@ function RoomDetailPageContent() {
     isVerified,
     showPasswordDialog,
     messages,
+    hasMoreMessages,
     members,
     playlistItems,
     settings,
@@ -73,6 +74,7 @@ function RoomDetailPageContent() {
     addMessage,
     removeMember,
     addMember,
+    loadMoreMessages,
   } = useRoomStore();
 
   const [password, setPassword] = useState("");
@@ -198,41 +200,38 @@ function RoomDetailPageContent() {
     }
   }, [messages, activeTab]);
 
-  // Handle load more messages when scrolling to top
-  useEffect(() => {
+  const handleLoadMoreMessages = async () => {
+    if (loadingMoreMessages || !room || !hasMoreMessages) {
+      console.log("Skip load more:", {
+        loadingMoreMessages,
+        hasRoom: !!room,
+        hasMoreMessages,
+      });
+      return;
+    }
+
+    console.log("Starting load more messages...");
+    setLoadingMoreMessages(true);
+
+    // Save scroll position before loading
     const scrollContainer = scrollAreaRef.current?.querySelector(
       "[data-radix-scroll-area-viewport]"
     );
-    if (!scrollContainer) return;
+    const scrollHeightBefore = scrollContainer?.scrollHeight || 0;
+    const scrollTopBefore = scrollContainer?.scrollTop || 0;
 
-    const handleScroll = () => {
-      const { scrollTop } = scrollContainer;
-
-      // Trigger load more when scroll near top (within 50px)
-      if (scrollTop < 50 && !loadingMoreMessages) {
-        handleLoadMoreMessages();
-      }
-    };
-
-    scrollContainer.addEventListener("scroll", handleScroll);
-    return () => scrollContainer.removeEventListener("scroll", handleScroll);
-  }, [loadingMoreMessages]);
-
-  const handleLoadMoreMessages = async () => {
-    if (loadingMoreMessages || !room) return;
-
-    setLoadingMoreMessages(true);
     try {
-      // TODO: Implement load more messages logic here
-      // Example:
-      // const olderMessages = await roomSocketService.loadMoreMessages(room.code, messages[0]?.id);
-      // Add older messages to store
-      console.log("Loading more messages...");
+      await loadMoreMessages();
+      console.log("Load more messages success!");
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      toast.info("Đã tải hết tin nhắn");
+      // Restore scroll position after loading
+      setTimeout(() => {
+        if (scrollContainer) {
+          const scrollHeightAfter = scrollContainer.scrollHeight;
+          const scrollHeightDiff = scrollHeightAfter - scrollHeightBefore;
+          scrollContainer.scrollTop = scrollTopBefore + scrollHeightDiff;
+        }
+      }, 100);
     } catch (error) {
       console.error("Failed to load more messages:", error);
       toast.error("Không thể tải thêm tin nhắn");
@@ -295,6 +294,48 @@ function RoomDetailPageContent() {
       handleSendMessage();
     }
   };
+
+  // Handle load more messages when scrolling to top
+  useEffect(() => {
+    if (activeTab !== "chat") return;
+
+    const scrollContainer = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    );
+    
+    if (!scrollContainer) {
+      console.log("ScrollArea viewport not found!");
+      return;
+    }
+
+    console.log("ScrollArea viewport found, adding scroll listener");
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+
+      console.log("Scroll event:", {
+        scrollTop,
+        scrollHeight,
+        clientHeight,
+        loadingMoreMessages,
+        hasMoreMessages,
+        room: !!room,
+      });
+
+      // Trigger load more when scroll near top (within 100px)
+      if (scrollTop < 100 && !loadingMoreMessages && hasMoreMessages && room) {
+        console.log("🔥 Triggering load more messages...");
+        handleLoadMoreMessages();
+      }
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll);
+    
+    return () => {
+      console.log("Removing scroll listener");
+      scrollContainer.removeEventListener("scroll", handleScroll);
+    };
+  }, [activeTab, loadingMoreMessages, hasMoreMessages, room, handleLoadMoreMessages]);
 
   if (loading) {
     return (
@@ -562,11 +603,25 @@ function RoomDetailPageContent() {
                       ref={scrollAreaRef}
                       className="flex-1 max-h-[74vh] p-4">
                       <div className="space-y-3">
+                        {/* Loading indicator at top */}
                         {loadingMoreMessages && (
-                          <div className="flex justify-center py-2">
-                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          <div className="flex justify-center py-3">
+                            <div className="flex items-center gap-2 text-white/60">
+                              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                              <span className="text-sm">Đang tải...</span>
+                            </div>
                           </div>
                         )}
+
+                        {/* No more messages indicator */}
+                        {!hasMoreMessages && messages.length > 0 && (
+                          <div className="flex justify-center py-2">
+                            <span className="text-xs text-white/30">
+                              Đã tải hết tin nhắn
+                            </span>
+                          </div>
+                        )}
+
                         {messages.length === 0 ? (
                           <div className="text-center py-8">
                             <p className="text-white/40 text-sm">

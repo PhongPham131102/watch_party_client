@@ -22,12 +22,15 @@ import ProtectedRoute from "@/src/components/ProtectedRoute";
 import { useAuthStore } from "@/src/store/auth.store";
 import { Input } from "@/components/ui/input";
 import CreateRoomDialog from "@/src/components/CreateRoomDialog";
+import { roomService } from "@/src/services/room.service";
+import { toast } from "@/src/utils/toast";
 
 function WatchPartyContent() {
   const router = useRouter();
   const [roomCode, setRoomCode] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [joiningRoom, setJoiningRoom] = useState(false);
   const { user } = useAuthStore();
   const roomsPerPage = 8;
 
@@ -193,9 +196,31 @@ function WatchPartyContent() {
     setIsCreateModalOpen(true);
   };
 
-  const handleJoinRoom = () => {
-    if (roomCode.trim()) {
-      router.push(`/watch-party/room/${roomCode}`);
+  const handleJoinRoom = async () => {
+    const code = roomCode.trim();
+    
+    if (!code) {
+      toast.error("Vui lòng nhập mã phòng");
+      return;
+    }
+
+    setJoiningRoom(true);
+    try {
+      // Check if room exists
+      const response = await roomService.checkRoom(code);
+      
+      if (response.data) {
+        // Room exists, navigate to room detail page
+        router.push(`/watch-party/${code}`);
+      } else {
+        toast.error("Phòng không tồn tại");
+      }
+    } catch (error: any) {
+      console.error("Error joining room:", error);
+      const errorMessage = error?.message || "Không thể tham gia phòng";
+      toast.error(errorMessage);
+    } finally {
+      setJoiningRoom(false);
     }
   };
 
@@ -244,18 +269,28 @@ function WatchPartyContent() {
                     value={roomCode}
                     onChange={(e) => setRoomCode(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" && !joiningRoom) {
                         handleJoinRoom();
                       }
                     }}
-                    className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-red-500/50 focus:ring-red-500/20"
+                    disabled={joiningRoom}
+                    className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-red-500/50 focus:ring-red-500/20 disabled:opacity-50"
                   />
                   <Button
                     onClick={handleJoinRoom}
-                    disabled={!roomCode.trim()}
+                    disabled={!roomCode.trim() || joiningRoom}
                     className="bg-white/10 hover:bg-white/20 text-white border border-white/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <Play className="w-4 h-4 mr-2" />
-                    Tham gia
+                    {joiningRoom ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Đang tham gia...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Tham gia
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>

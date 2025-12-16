@@ -15,6 +15,8 @@ interface RoomState {
   isVerified: boolean;
   showPasswordDialog: boolean;
   messages: RoomMessage[];
+  hasMoreMessages: boolean;
+  lastMessageId: string | null;
   members: RoomMember[];
   playlistItems: RoomPlaylist[];
   settings: IRoomSetting | null;
@@ -33,6 +35,7 @@ interface RoomState {
     settings: IRoomSetting;
   }) => void;
   addMessage: (message: RoomMessage) => void;
+  loadMoreMessages: () => Promise<void>;
   addMember: (member: RoomMember) => void;
   removeMember: (userId: string) => void;
   addPlaylistItem: (item: RoomPlaylist) => void;
@@ -47,6 +50,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   isVerified: false,
   showPasswordDialog: false,
   messages: [],
+  hasMoreMessages: true,
+  lastMessageId: null,
   members: [],
   playlistItems: [],
   settings: null,
@@ -124,6 +129,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       isVerified: false,
       showPasswordDialog: false,
       messages: [],
+      hasMoreMessages: true,
+      lastMessageId: null,
       members: [],
       playlistItems: [],
       settings: null,
@@ -162,18 +169,53 @@ export const useRoomStore = create<RoomState>((set, get) => ({
     }
   },
 
-  setRoomData: (data) =>
+  setRoomData: (data) => {
+    const lastMsg = data.messages.length > 0 ? data.messages[0] : null;
     set({
       messages: data.messages,
+      hasMoreMessages: data.messages.length >= 20,
+      lastMessageId: lastMsg?.id || null,
       members: data.members,
       playlistItems: data.playlistItems,
       settings: data.settings,
-    }),
+    });
+  },
 
   addMessage: (message) =>
     set((state) => ({
       messages: [...state.messages, message],
     })),
+
+  loadMoreMessages: async () => {
+    const { currentRoom, lastMessageId, hasMoreMessages } = get();
+
+    if (!currentRoom?.code || !hasMoreMessages || !lastMessageId) {
+      return;
+    }
+
+    try {
+      const response = await roomService.getMessages(
+        currentRoom.code,
+        lastMessageId,
+        20
+      );
+
+      if (response.success && response.data.length > 0) {
+        // Prepend older messages to the beginning (vì backend trả về DESC)
+        const olderMessages = response.data.reverse();
+        set((state) => ({
+          messages: [...olderMessages, ...state.messages],
+          hasMoreMessages: response.pagination.hasMore,
+          lastMessageId: response.pagination.lastMessageId,
+        }));
+      } else {
+        set({ hasMoreMessages: false });
+      }
+    } catch (error) {
+      console.error("Failed to load more messages:", error);
+      throw error;
+    }
+  },
 
   addMember: (member) =>
     set((state) => ({
