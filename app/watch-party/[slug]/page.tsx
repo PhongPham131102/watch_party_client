@@ -99,6 +99,8 @@ function RoomDetailPageContent() {
   const [isForceDisconnected, setIsForceDisconnected] = useState(false);
   const [disconnectReason, setDisconnectReason] = useState("");
   const [redirectCountdown, setRedirectCountdown] = useState(3);
+  const [isJoinedRoom, setIsJoinedRoom] = useState(false);
+  const [joinError, setJoinError] = useState<string>("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
@@ -209,8 +211,11 @@ function RoomDetailPageContent() {
 
           // Auto redirect after 3 seconds
           setTimeout(() => {
-            clearRoom();
             router.push("/watch-party");
+            // Cleanup after redirect to avoid flash error UI
+            setTimeout(() => {
+              clearRoom();
+            }, 100);
           }, 3000);
         });
 
@@ -225,10 +230,13 @@ function RoomDetailPageContent() {
           playlistItems: response.playlistItems,
           settings: response.settings,
         });
+        setIsJoinedRoom(true);
         toast.success("Đã tham gia phòng thành công!");
-      } catch (error) {
-        console.error("Failed to initialize room:", error);
-        toast.error("Không thể kết nối đến phòng");
+      } catch (error: any) {
+        console.error("Join room failed:", error);
+        const errorMessage = error?.error || error?.message || "Không thể kết nối đến phòng";
+        setJoinError(errorMessage);
+        toast.error(errorMessage);
       }
     };
 
@@ -467,7 +475,8 @@ function RoomDetailPageContent() {
     );
   }
 
-  if (error || !room) {
+  // Don't show error UI when force disconnected (will redirect soon)
+  if ((error || !room) && !isForceDisconnected) {
     return (
       <div className=" min-h-screen bg-linear-to-b from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
         <div className="text-center max-w-md px-4">
@@ -572,6 +581,50 @@ function RoomDetailPageContent() {
     );
   }
 
+  // Show error UI when join fails
+  if (joinError && room && isVerified) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#1a1a2e] border border-red-500/30 rounded-lg p-6">
+          <div className="text-center mb-4">
+            <div className="w-16 h-16 mx-auto mb-4 bg-red-500/10 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Không thể tham gia phòng</h3>
+            <p className="text-red-400 text-sm">{joinError}</p>
+          </div>
+          <div className="space-y-2">
+            <Button onClick={() => router.push("/watch-party")} className="w-full bg-primary hover:bg-primary/90">
+              Quay về danh sách phòng
+            </Button>
+            <Button onClick={() => window.location.reload()} variant="outline" className="w-full border-white/20 text-white hover:bg-white/5">
+              Thử lại
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while joining room
+  if (!isJoinedRoom && room && isVerified) {
+    return (
+      <div className="min-h-screen bg-linear-to-b from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white/60">Đang tham gia phòng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't show room UI if not joined
+  if (!isJoinedRoom) {
+    return null;
+  }
+
   return (
     <div className="pt-16  h-screen bg-linear-to-b from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex flex-col overflow-hidden">
       {/* Room Header */}
@@ -579,14 +632,14 @@ function RoomDetailPageContent() {
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-lg font-bold text-white">{room.name}</h1>
+              <h1 className="text-lg font-bold text-white">{room?.name}</h1>
               <div className="flex items-center gap-3 text-sm text-white/60">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                  {room.type === "public" ? "Public" : "Private"}
+                  {room?.type === "public" ? "Public" : "Private"}
                 </span>
                 <span className="px-2 py-1 bg-white/5 rounded text-xs font-mono">
-                  {room.code}
+                  {room?.code}
                 </span>
                 {isOwner && (
                   <span className="flex items-center gap-1 px-2 py-1 bg-primary/20 text-primary rounded text-xs">

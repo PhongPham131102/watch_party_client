@@ -48,6 +48,14 @@ export interface ForceDisconnectEvent {
   timestamp: string;
 }
 
+export interface SocketErrorEvent {
+  success: false;
+  error: string;
+  errorCode: string;
+  event: string;
+  timestamp: string;
+}
+
 export interface KickUserResponse {
   success: boolean;
   message: string;
@@ -85,32 +93,20 @@ class RoomSocketService {
 
       this.socket = socketService.connect("room");
 
-      // Wait for authenticated event from server
-      this.socket.once(
-        "authenticated",
-        (data: {
-          success: boolean;
-          userId: string;
-          username: string;
-          timestamp: string;
-        }) => {
-          console.log("Room socket authenticated:", data);
-          this.isAuthenticated = true;
-          resolve(this.socket!);
-        }
-      );
+      this.socket.once("authenticated", (data: { success: boolean; userId: string; username: string; timestamp: string }) => {
+        console.log("Room socket authenticated:", data);
+        this.isAuthenticated = true;
+        resolve(this.socket!);
+      });
 
-      // Handle connection errors
       this.socket.once("connect_error", (error) => {
         console.error("Room socket connection error:", error);
         this.isAuthenticated = false;
         reject(error);
       });
 
-      // Timeout after 10 seconds
       setTimeout(() => {
         if (!this.isAuthenticated) {
-          console.error("Room socket authentication timeout");
           reject(new Error("Authentication timeout"));
         }
       }, 10000);
@@ -126,25 +122,22 @@ class RoomSocketService {
   }
 
   async joinRoom(roomCode: string): Promise<JoinRoomResponse> {
-    if (!this.socket?.connected) {
-      console.log("Socket not connected, connecting first...");
-      await this.connect();
-    }
-    console.log("Emitting joinRoom:", roomCode);
+    if (!this.socket?.connected) await this.connect();
 
     return new Promise((resolve, reject) => {
-      this.socket!.emit(
-        "joinRoom",
-        { roomCode },
-        (response: JoinRoomResponse) => {
-          console.log("Join room response:", response);
-          if (response.success) {
-            resolve(response);
-          } else {
-            reject(new Error("Failed to join room"));
-          }
+      const errorListener = (error: SocketErrorEvent) => {
+        if (error.event === "joinRoom") {
+          this.socket!.off("error", errorListener);
+          reject(error);
         }
-      );
+      };
+
+      this.socket!.once("error", errorListener);
+
+      this.socket!.emit("joinRoom", { roomCode }, (response: JoinRoomResponse) => {
+        this.socket!.off("error", errorListener);
+        response.success ? resolve(response) : reject(new Error("Failed to join room"));
+      });
     });
   }
 
@@ -165,27 +158,13 @@ class RoomSocketService {
     this.socket?.on("userLeft", callback);
   }
 
-  async sendMessage(
-    roomCode: string,
-    content: string
-  ): Promise<SendMessageResponse> {
-    if (!this.socket?.connected) {
-      throw new Error("Socket not connected");
-    }
+  async sendMessage(roomCode: string, content: string): Promise<SendMessageResponse> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
 
     return new Promise((resolve, reject) => {
-      this.socket!.emit(
-        "sendMessage",
-        { roomCode, content },
-        (response: SendMessageResponse) => {
-          console.log("Send message response:", response);
-          if (response.success) {
-            resolve(response);
-          } else {
-            reject(new Error("Failed to send message"));
-          }
-        }
-      );
+      this.socket!.emit("sendMessage", { roomCode, content }, (response: SendMessageResponse) => {
+        response.success ? resolve(response) : reject(new Error("Failed to send message"));
+      });
     });
   }
 
@@ -193,104 +172,52 @@ class RoomSocketService {
     this.socket?.on("newMessage", callback);
   }
 
-  offNewMessage(): void {
-    this.socket?.off("newMessage");
-  }
-
-  offUserJoined(): void {
-    this.socket?.off("userJoined");
-  }
-
-  offUserLeft(): void {
-    this.socket?.off("userLeft");
-  }
-
   onMemberRemoved(callback: (data: MemberRemovedEvent) => void): void {
     this.socket?.on("memberRemoved", callback);
-  }
-
-  offMemberRemoved(): void {
-    this.socket?.off("memberRemoved");
   }
 
   onMemberAdded(callback: (data: RoomMember) => void): void {
     this.socket?.on("memberAdded", callback);
   }
 
-  offMemberAdded(): void {
-    this.socket?.off("memberAdded");
-  }
-
   onUserKicked(callback: (data: UserKickedEvent) => void): void {
     this.socket?.on("userKicked", callback);
-  }
-
-  offUserKicked(): void {
-    this.socket?.off("userKicked");
   }
 
   onUserRoleChanged(callback: (data: UserRoleChangedEvent) => void): void {
     this.socket?.on("userRoleChanged", callback);
   }
 
-  offUserRoleChanged(): void {
-    this.socket?.off("userRoleChanged");
-  }
-
   onForceDisconnect(callback: (data: ForceDisconnectEvent) => void): void {
     this.socket?.on("forceDisconnect", callback);
   }
 
-  offForceDisconnect(): void {
-    this.socket?.off("forceDisconnect");
-  }
+  offNewMessage(): void { this.socket?.off("newMessage"); }
+  offUserJoined(): void { this.socket?.off("userJoined"); }
+  offUserLeft(): void { this.socket?.off("userLeft"); }
+  offMemberRemoved(): void { this.socket?.off("memberRemoved"); }
+  offMemberAdded(): void { this.socket?.off("memberAdded"); }
+  offUserKicked(): void { this.socket?.off("userKicked"); }
+  offUserRoleChanged(): void { this.socket?.off("userRoleChanged"); }
+  offForceDisconnect(): void { this.socket?.off("forceDisconnect"); }
 
-  async kickUser(
-    roomCode: string,
-    targetUserId: string
-  ): Promise<KickUserResponse> {
-    if (!this.socket?.connected) {
-      throw new Error("Socket not connected");
-    }
+  async kickUser(roomCode: string, targetUserId: string): Promise<KickUserResponse> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
 
     return new Promise((resolve, reject) => {
-      this.socket!.emit(
-        "kickUser",
-        { roomCode, targetUserId },
-        (response: KickUserResponse) => {
-          console.log("Kick user response:", response);
-          if (response.success) {
-            resolve(response);
-          } else {
-            reject(new Error("Failed to kick user"));
-          }
-        }
-      );
+      this.socket!.emit("kickUser", { roomCode, targetUserId }, (response: KickUserResponse) => {
+        response.success ? resolve(response) : reject(new Error("Failed to kick user"));
+      });
     });
   }
 
-  async changeUserRole(
-    roomCode: string,
-    targetUserId: string,
-    newRole: string
-  ): Promise<ChangeUserRoleResponse> {
-    if (!this.socket?.connected) {
-      throw new Error("Socket not connected");
-    }
+  async changeUserRole(roomCode: string, targetUserId: string, newRole: string): Promise<ChangeUserRoleResponse> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
 
     return new Promise((resolve, reject) => {
-      this.socket!.emit(
-        "changeUserRole",
-        { roomCode, targetUserId, newRole },
-        (response: ChangeUserRoleResponse) => {
-          console.log("Change role response:", response);
-          if (response.success) {
-            resolve(response);
-          } else {
-            reject(new Error("Failed to change role"));
-          }
-        }
-      );
+      this.socket!.emit("changeUserRole", { roomCode, targetUserId, newRole }, (response: ChangeUserRoleResponse) => {
+        response.success ? resolve(response) : reject(new Error("Failed to change role"));
+      });
     });
   }
 

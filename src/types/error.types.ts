@@ -80,6 +80,17 @@ export enum ErrorCode {
   ROOM_FULL = "ERR_5001",
   ROOM_UNAUTHORIZED = "ERR_5002",
   ROOM_BY_CODE_NOT_FOUND = "ERR_5003",
+  ROOM_MEMBER_NOT_FOUND = "ERR_5004",
+  ROOM_NOT_MEMBER = "ERR_5005",
+  ROOM_INVALID_PASSWORD = "ERR_5006",
+
+  // WebSocket Errors (5100-5199)
+  WS_NOT_AUTHENTICATED = "ERR_5100",
+  WS_INVALID_TOKEN = "ERR_5101",
+  WS_CONNECTION_FAILED = "ERR_5102",
+  WS_ROOM_NOT_JOINED = "ERR_5103",
+  WS_INVALID_EVENT = "ERR_5104",
+  WS_PERMISSION_DENIED = "ERR_5105",
 
   // File Upload Errors (6000-6099)
   FILE_TOO_LARGE = "ERR_6000",
@@ -169,6 +180,18 @@ export const ErrorCodeMessage: Record<ErrorCode, string> = {
   [ErrorCode.ROOM_FULL]: "Phòng đã đầy",
   [ErrorCode.ROOM_UNAUTHORIZED]: "Không có quyền truy cập phòng",
   [ErrorCode.ROOM_BY_CODE_NOT_FOUND]: "Không tìm thấy phòng với mã đã cho",
+  [ErrorCode.ROOM_MEMBER_NOT_FOUND]: "Thành viên phòng không tồn tại",
+  [ErrorCode.ROOM_NOT_MEMBER]: "Bạn không phải là thành viên của phòng này",
+  [ErrorCode.ROOM_INVALID_PASSWORD]: "Mật khẩu phòng không đúng",
+
+  // WebSocket
+  [ErrorCode.WS_NOT_AUTHENTICATED]: "Chưa xác thực WebSocket",
+  [ErrorCode.WS_INVALID_TOKEN]: "Token WebSocket không hợp lệ",
+  [ErrorCode.WS_CONNECTION_FAILED]: "Kết nối WebSocket thất bại",
+  [ErrorCode.WS_ROOM_NOT_JOINED]: "Bạn chưa tham gia phòng",
+  [ErrorCode.WS_INVALID_EVENT]: "Sự kiện WebSocket không hợp lệ",
+  [ErrorCode.WS_PERMISSION_DENIED]: "Không có quyền thực hiện hành động này",
+
   // File Upload
   [ErrorCode.FILE_TOO_LARGE]: "File quá lớn",
   [ErrorCode.FILE_INVALID_TYPE]: "Định dạng file không hợp lệ",
