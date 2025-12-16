@@ -43,6 +43,11 @@ export interface UserRoleChangedEvent {
   changedBy: string;
 }
 
+export interface ForceDisconnectEvent {
+  reason: string;
+  timestamp: string;
+}
+
 export interface KickUserResponse {
   success: boolean;
   message: string;
@@ -230,6 +235,14 @@ class RoomSocketService {
 
   offUserRoleChanged(): void {
     this.socket?.off("userRoleChanged");
+  }
+
+  onForceDisconnect(callback: (data: ForceDisconnectEvent) => void): void {
+    this.socket?.on("forceDisconnect", callback);
+  }
+
+  offForceDisconnect(): void {
+    this.socket?.off("forceDisconnect");
   }
 
   async kickUser(

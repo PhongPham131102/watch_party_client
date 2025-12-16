@@ -49,6 +49,7 @@ import {
   type MemberRemovedEvent,
   type UserKickedEvent,
   type UserRoleChangedEvent,
+  type ForceDisconnectEvent,
 } from "@/src/services/room-socket.service";
 import { RoomMessage, TypeMessage } from "@/src/types/room-message.types";
 
@@ -95,6 +96,9 @@ function RoomDetailPageContent() {
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [showMemberMenu, setShowMemberMenu] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isForceDisconnected, setIsForceDisconnected] = useState(false);
+  const [disconnectReason, setDisconnectReason] = useState("");
+  const [redirectCountdown, setRedirectCountdown] = useState(3);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
@@ -127,7 +131,15 @@ function RoomDetailPageContent() {
         // Listen for user joined
         roomSocketService.onUserJoined((data: UserJoinedEvent) => {
           console.log("User joined:", data);
-          setOnlineMembers((prev) => [...prev, data]);
+          setOnlineMembers((prev) => {
+            // Check if user already exists (avoid duplicate when opening multiple tabs)
+            const existingUser = prev.find((m) => m.userId === data.userId);
+            if (existingUser) {
+              console.log("User already in online list:", data.userId);
+              return prev;
+            }
+            return [...prev, data];
+          });
           toast.success(`${data.username} đã tham gia phòng`);
         });
 
@@ -175,6 +187,33 @@ function RoomDetailPageContent() {
           }
         });
 
+        // Listen for force disconnect (when user opens room in another tab)
+        roomSocketService.onForceDisconnect((data: ForceDisconnectEvent) => {
+          console.log("Force disconnect:", data);
+          setIsForceDisconnected(true);
+          setDisconnectReason(
+            data.reason || "Bạn đã mở phòng này ở tab/thiết bị khác"
+          );
+          setRedirectCountdown(3);
+
+          // Countdown timer
+          const countdownInterval = setInterval(() => {
+            setRedirectCountdown((prev) => {
+              if (prev <= 1) {
+                clearInterval(countdownInterval);
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+
+          // Auto redirect after 3 seconds
+          setTimeout(() => {
+            clearRoom();
+            router.push("/watch-party");
+          }, 3000);
+        });
+
         // Join room and get initial data from response
         const response = await roomSocketService.joinRoom(room.code);
         console.log("Join room success:", response);
@@ -209,6 +248,7 @@ function RoomDetailPageContent() {
       roomSocketService.offMemberAdded();
       roomSocketService.offUserKicked();
       roomSocketService.offUserRoleChanged();
+      roomSocketService.offForceDisconnect();
     };
   }, [
     room,
@@ -431,7 +471,6 @@ function RoomDetailPageContent() {
     return (
       <div className=" min-h-screen bg-linear-to-b from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex items-center justify-center">
         <div className="text-center max-w-md px-4">
-          <div className="text-6xl mb-4">❌</div>
           <h1 className="text-2xl font-bold text-white mb-2">
             Không tìm thấy phòng
           </h1>
@@ -1189,6 +1228,55 @@ function RoomDetailPageContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Force Disconnect Dialog */}
+      <Dialog open={isForceDisconnected} onOpenChange={() => {}}>
+        <DialogContent
+          className="sm:max-w-[425px] bg-[#0a0a0f] border-white/10 text-white"
+          onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-transparent bg-clip-text bg-linear-to-r from-red-400 to-orange-400">
+              Kết nối bị ngắt
+            </DialogTitle>
+            <DialogDescription className="text-white/60">
+              Phiên kết nối của bạn đã bị ngắt
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-white text-sm">{disconnectReason}</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-white/60 text-sm text-center">
+                Tự động chuyển hướng trong{" "}
+                <span className="text-primary font-bold text-lg">
+                  {redirectCountdown}
+                </span>{" "}
+                giây...
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              onClick={() => {
+                clearRoom();
+                router.push("/watch-party");
+              }}
+              className="flex-1 bg-primary hover:bg-primary/90">
+              Quay về ngay
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Overlay when force disconnected */}
+      {isForceDisconnected && (
+        <div className="fixed inset-0 bg-black/80 z-40 pointer-events-none" />
+      )}
     </div>
   );
 }

@@ -219,9 +219,24 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   },
 
   addMember: (member) =>
-    set((state) => ({
-      members: [...state.members, member],
-    })),
+    set((state) => {
+      // Check if member already exists (avoid duplicate)
+      const memberId =
+        typeof member.user === "string" ? member.user : member.user?.id;
+      const existingMember = state.members.find((m) => {
+        const existingId = typeof m.user === "string" ? m.user : m.user?.id;
+        return existingId === memberId;
+      });
+
+      if (existingMember) {
+        console.log("Member already exists in list:", memberId);
+        return state;
+      }
+
+      return {
+        members: [...state.members, member],
+      };
+    }),
 
   removeMember: (userId) =>
     set((state) => ({
