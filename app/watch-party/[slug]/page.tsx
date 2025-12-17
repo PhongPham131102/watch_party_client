@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
@@ -5,7 +6,7 @@ import { useRoomStore } from "@/src/store/room.store";
 import { useAuthStore } from "@/src/store/auth.store";
 import { toast } from "@/src/utils/toast";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,22 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -54,6 +71,124 @@ import {
 import { RoomMessage, TypeMessage } from "@/src/types/room-message.types";
 import { episodeService } from "@/src/services/episode.service";
 import { Episode } from "@/src/types/episode.types";
+import { PlaylistUpdatedEvent } from "@/src/types/room-playlist-event.types";
+import { GripVertical } from "lucide-react";
+
+// Sortable Playlist Item Component
+interface SortablePlaylistItemProps {
+  id: string;
+  video: any;
+  addedBy: any;
+  canDelete: boolean;
+  canDrag: boolean;
+  onDelete: (id: string, title: string) => void;
+  isDeleting: boolean;
+}
+
+function SortablePlaylistItem({
+  id,
+  video,
+  addedBy,
+  canDelete,
+  canDrag,
+  onDelete,
+  isDeleting,
+}: SortablePlaylistItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled: !canDrag });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: isDragging ? transition : "all 150ms ease",
+    opacity: isDragging ? 0.6 : 1,
+    scale: isDragging ? 1.02 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="w-full px-2 my-2">
+      <div className={`grid grid-cols-[20px_112px_1fr_40px] gap-2 py-2 bg-gray-800/50 hover:bg-gray-800/70 rounded-md group items-center ${isDragging ? 'shadow-lg shadow-primary/20 ring-2 ring-primary/50' : ''}`}>
+        {canDrag ? (
+          <div
+            {...attributes}
+            {...listeners}
+            className="flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+            <GripVertical size={16} className="text-white/40" />
+          </div>
+        ) : (
+          <div />
+        )}
+
+        <div className="relative">
+          <div className="w-full aspect-video bg-linear-to-br from-gray-800 to-gray-900 rounded overflow-hidden">
+            {video?.thumbnailUrl ? (
+              <img
+                src={video.thumbnailUrl}
+                alt={video.title || "Video thumbnail"}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Film size={20} className="text-white/20" />
+              </div>
+            )}
+          </div>
+          {video?.durationMinutes && (
+            <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-xs text-white">
+              {video.durationMinutes} phút
+            </div>
+          )}
+        </div>
+
+        <div className="min-w-0 overflow-hidden">
+          <h4 className="text-sm font-medium text-white truncate">
+            {video?.title || "Unknown Video"}
+          </h4>
+          <p className="text-xs text-white/60 mt-0.5 truncate">
+            Added by {addedBy?.username || "Unknown"}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-center pr-2">
+          {canDelete && (
+            <Button
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(id, video?.title || "Unknown Video");
+              }}
+              disabled={isDeleting}
+              className="h-8 w-8 bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 border border-red-500/30 disabled:opacity-50">
+              {isDeleting ? (
+                <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RoomDetailPageContent() {
   const params = useParams<{ slug: string }>();
@@ -84,6 +219,11 @@ function RoomDetailPageContent() {
     addMember,
     loadMoreMessages,
     updateMemberRole,
+    addPlaylistItem,
+    removePlaylistItem,
+    updatePlaylistItemPosition,
+    reorderPlaylistOptimistic,
+    setPlaylistItems,
   } = useRoomStore();
 
   const [password, setPassword] = useState("");
@@ -94,6 +234,9 @@ function RoomDetailPageContent() {
   const [searchResults, setSearchResults] = useState<Episode[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [addingToPlaylist, setAddingToPlaylist] = useState<string | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [chatMessage, setChatMessage] = useState("");
   const [onlineMembers, setOnlineMembers] = useState<UserJoinedEvent[]>([]);
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -132,11 +275,65 @@ function RoomDetailPageContent() {
 
     return () => clearTimeout(delayTimer);
   }, [searchQuery]);
+
+  // Update current user role
+  useEffect(() => {
+    if (currentUser && members.length > 0) {
+      const currentMember = members.find((m) => {
+        const memberId = typeof m.user === "string" ? m.user : m.user?.id;
+        return memberId === currentUser.id;
+      });
+      if (currentMember) {
+        setCurrentUserRole(currentMember.role);
+      }
+    }
+  }, [currentUser, members]);
+
   const [redirectCountdown, setRedirectCountdown] = useState(3);
   const [isJoinedRoom, setIsJoinedRoom] = useState(false);
   const [joinError, setJoinError] = useState<string>("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Memoize valid playlist items to prevent re-computing on every render
+  const validPlaylistItems = useMemo(() => {
+    return playlistItems.filter((item) => {
+      const itemId = (item as any).id || (item as any)._id;
+      if (!itemId || itemId.startsWith("temp-")) {
+        console.warn("Skipping invalid playlist item:", item);
+        return false;
+      }
+      return true;
+    });
+  }, [playlistItems]);
+
+  // Memoize playlist item IDs for SortableContext
+  const playlistItemIds = useMemo(() => {
+    return validPlaylistItems.map(
+      (item) => (item as any).id || (item as any)._id
+    );
+  }, [validPlaylistItems]);
+
+  // Check if current user can control playlist
+  const canControlPlaylist = useMemo(() => {
+    if (!currentUser || !members.length) return false;
+
+    const currentMember = members.find((m) => {
+      const memberId = typeof m.user === "string" ? m.user : m.user?.id;
+      return memberId === currentUser.id;
+    });
+
+    const role = currentMember?.role;
+    return role === "owner" || role === "moderator";
+  }, [currentUser, members]);
 
   useEffect(() => {
     if (!slug) {
@@ -223,6 +420,39 @@ function RoomDetailPageContent() {
           }
         });
 
+        // Listen for playlist updated
+        roomSocketService.onPlaylistUpdated((data: PlaylistUpdatedEvent) => {
+          console.log("Playlist updated:", data);
+
+          // Kiểm tra xem action này có phải từ currentUser không
+          const isOwnAction = 
+            (data.action === "add" && data.addedBy === currentUser?.id) ||
+            (data.action === "remove" && data.removedBy === currentUser?.id) ||
+            (data.action === "reorder" && data.reorderedBy === currentUser?.id);
+
+          // Nếu là action của mình thì bỏ qua (đã update optimistic rồi)
+          if (isOwnAction && data.action === "reorder") {
+            console.log("Skipping own reorder action (already optimistically updated)");
+            return;
+          }
+
+          // Handle based on action type
+          if (data.action === "add") {
+            addPlaylistItem(data.item);
+            // Không cần toast ở đây vì đã có system message từ backend
+          } else if (data.action === "remove") {
+            const itemId = (data.item as any).id || (data.item as any)._id;
+            if (itemId) {
+              removePlaylistItem(itemId);
+            }
+          } else if (data.action === "reorder") {
+            const itemId = (data.item as any).id || (data.item as any)._id;
+            if (itemId) {
+              updatePlaylistItemPosition(itemId, data.item);
+            }
+          }
+        });
+
         // Listen for force disconnect (when user opens room in another tab)
         roomSocketService.onForceDisconnect((data: ForceDisconnectEvent) => {
           console.log("Force disconnect:", data);
@@ -268,7 +498,8 @@ function RoomDetailPageContent() {
         toast.success("Đã tham gia phòng thành công!");
       } catch (error: any) {
         console.error("Join room failed:", error);
-        const errorMessage = error?.error || error?.message || "Không thể kết nối đến phòng";
+        const errorMessage =
+          error?.error || error?.message || "Không thể kết nối đến phòng";
         setJoinError(errorMessage);
         toast.error(errorMessage);
       }
@@ -291,6 +522,7 @@ function RoomDetailPageContent() {
       roomSocketService.offUserKicked();
       roomSocketService.offUserRoleChanged();
       roomSocketService.offForceDisconnect();
+      roomSocketService.offPlaylistUpdated();
     };
   }, [
     room,
@@ -447,6 +679,117 @@ function RoomDetailPageContent() {
       toast.error(error?.message || "Không thể thay đổi quyền");
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleAddToPlaylist = async (
+    episodeId: string,
+    episodeTitle: string
+  ) => {
+    if (!room || addingToPlaylist) return;
+
+    setAddingToPlaylist(episodeId);
+    try {
+      const response = await roomSocketService.addToPlaylist(
+        room.code,
+        episodeId
+      );
+
+      if (response.isDuplicate) {
+        toast.warning(response.message);
+      } else {
+        toast.success(`Đã thêm "${episodeTitle}" vào playlist`);
+      }
+
+      setShowSearchResults(false);
+      setSearchQuery("");
+    } catch (error: any) {
+      console.error("Failed to add to playlist:", error);
+      toast.error(error?.message || "Không thể thêm vào playlist");
+    } finally {
+      setAddingToPlaylist(null);
+    }
+  };
+
+  const handleRemoveFromPlaylist = async (
+    itemId: string,
+    videoTitle: string
+  ) => {
+    if (!room || deletingItemId) return;
+
+    setDeletingItemId(itemId);
+    try {
+      await roomSocketService.removeFromPlaylist(room.code, itemId);
+    } catch (error: any) {
+      console.error("Failed to remove from playlist:", error);
+      toast.error(error?.message || "Không thể xóa khỏi playlist");
+    } finally {
+      setDeletingItemId(null);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !room) {
+      return;
+    }
+
+    const oldIndex = playlistItems.findIndex(
+      (item) =>
+        (item as any).id === active.id || (item as any)._id === active.id
+    );
+    const newIndex = playlistItems.findIndex(
+      (item) => (item as any).id === over.id || (item as any)._id === over.id
+    );
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Lưu trạng thái cũ để rollback nếu có lỗi
+    const previousPlaylist = [...playlistItems];
+
+    // **OPTIMISTIC UPDATE**: Cập nhật UI ngay lập tức
+    reorderPlaylistOptimistic(oldIndex, newIndex);
+
+    // Tính toán position mới theo fractional indexing
+    let newPosition: number;
+
+    if (newIndex === 0) {
+      // Kéo lên đầu
+      newPosition = playlistItems[0].position / 2;
+    } else if (newIndex === playlistItems.length - 1) {
+      // Kéo xuống cuối
+      newPosition = playlistItems[playlistItems.length - 1].position + 1000;
+    } else {
+      // Kéo vào giữa
+      if (newIndex > oldIndex) {
+        // Kéo xuống
+        const itemBefore = playlistItems[newIndex];
+        const itemAfter = playlistItems[newIndex + 1];
+        newPosition = itemAfter
+          ? (itemBefore.position + itemAfter.position) / 2
+          : itemBefore.position + 1000;
+      } else {
+        // Kéo lên
+        const itemBefore = playlistItems[newIndex - 1];
+        const itemAfter = playlistItems[newIndex];
+        newPosition = (itemBefore.position + itemAfter.position) / 2;
+      }
+    }
+
+    try {
+      const itemId =
+        (playlistItems[oldIndex] as any).id ||
+        (playlistItems[oldIndex] as any)._id;
+      
+      // Gửi request đến server (không cần đợi UI update)
+      await roomSocketService.reorderPlaylist(room.code, itemId, newPosition);
+    } catch (error: any) {
+      console.error("Failed to reorder playlist:", error);
+      toast.error(error?.message || "Không thể sắp xếp lại playlist");
+      
+      // **ROLLBACK**: Hoàn tác nếu server thất bại
+      setPlaylistItems(previousPlaylist);
     }
   };
 
@@ -622,18 +965,34 @@ function RoomDetailPageContent() {
         <div className="max-w-md w-full bg-[#1a1a2e] border border-red-500/30 rounded-lg p-6">
           <div className="text-center mb-4">
             <div className="w-16 h-16 mx-auto mb-4 bg-red-500/10 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-8 h-8 text-red-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Không thể tham gia phòng</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Không thể tham gia phòng
+            </h3>
             <p className="text-red-400 text-sm">{joinError}</p>
           </div>
           <div className="space-y-2">
-            <Button onClick={() => router.push("/watch-party")} className="w-full bg-primary hover:bg-primary/90">
+            <Button
+              onClick={() => router.push("/watch-party")}
+              className="w-full bg-primary hover:bg-primary/90">
               Quay về danh sách phòng
             </Button>
-            <Button onClick={() => window.location.reload()} variant="outline" className="w-full border-white/20 text-white hover:bg-white/5">
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
+              className="w-full border-white/20 text-white hover:bg-white/5">
               Thử lại
             </Button>
           </div>
@@ -705,10 +1064,12 @@ function RoomDetailPageContent() {
                   placeholder="Tìm kiếm phim, video..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
+                  onFocus={() =>
+                    searchQuery.trim() && setShowSearchResults(true)
+                  }
                   className="pl-9 h-9 bg-white/5 border-white/10 text-white placeholder:text-white/40"
                 />
-                
+
                 {/* Search Results Dropdown */}
                 {showSearchResults && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
@@ -721,18 +1082,21 @@ function RoomDetailPageContent() {
                       </div>
                     ) : searchResults.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-white/40 text-sm">Không tìm thấy kết quả</p>
-                        <p className="text-white/30 text-xs mt-1">Thử tìm kiếm với từ khóa khác</p>
+                        <p className="text-white/40 text-sm">
+                          Không tìm thấy kết quả
+                        </p>
+                        <p className="text-white/30 text-xs mt-1">
+                          Thử tìm kiếm với từ khóa khác
+                        </p>
                       </div>
                     ) : (
                       <div className="p-2 space-y-1">
                         {searchResults.map((episode) => (
                           <div
                             key={episode.id}
-                            className="flex gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors group"
-                          >
+                            className="flex gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors group">
                             <div className="relative shrink-0">
-                              <div className="w-24 h-16 bg-gradient-to-br from-gray-800 to-gray-900 rounded overflow-hidden">
+                              <div className="w-24 h-16 bg-linear-to-br from-gray-800 to-gray-900 rounded overflow-hidden">
                                 {episode.thumbnailUrl ? (
                                   <img
                                     src={episode.thumbnailUrl}
@@ -759,22 +1123,28 @@ function RoomDetailPageContent() {
                               </div>
                               <Button
                                 size="sm"
-                                onClick={() => {
-                                  // TODO: Add to playlist functionality
-                                  toast.success(`Đã thêm "${episode.title}" vào playlist`);
-                                  setShowSearchResults(false);
-                                  setSearchQuery("");
-                                }}
-                                className="shrink-0 bg-primary hover:bg-primary/90 text-white h-8 px-3 text-xs"
-                              >
-                                Thêm
+                                onClick={() =>
+                                  handleAddToPlaylist(episode.id, episode.title)
+                                }
+                                disabled={
+                                  addingToPlaylist === episode.id ||
+                                  episode.processingStatus !== "SUCCESS"
+                                }
+                                className="shrink-0 bg-primary hover:bg-primary/90 text-white h-8 px-3 text-xs disabled:opacity-50">
+                                {addingToPlaylist === episode.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  </div>
+                                ) : (
+                                  "Thêm"
+                                )}
                               </Button>
                             </div>
                           </div>
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Close button */}
                     <div className="border-t border-white/10 p-2">
                       <button
@@ -782,8 +1152,7 @@ function RoomDetailPageContent() {
                           setShowSearchResults(false);
                           setSearchQuery("");
                         }}
-                        className="w-full text-xs text-white/60 hover:text-white py-2 transition-colors"
-                      >
+                        className="w-full text-xs text-white/60 hover:text-white py-2 transition-colors">
                         Đóng
                       </button>
                     </div>
@@ -1147,8 +1516,8 @@ function RoomDetailPageContent() {
                   <TabsContent
                     value="playlist"
                     className="flex-1 m-0 data-[state=inactive]:hidden">
-                    <ScrollArea className="h-full p-4">
-                      <div className="space-y-3">
+                    <ScrollArea className="h-full">
+                      <div className="py-2 w-full">
                         {playlistItems.length === 0 ? (
                           <div className="text-center py-8">
                             <ListVideo className="w-12 h-12 text-white/20 mx-auto mb-3" />
@@ -1160,63 +1529,42 @@ function RoomDetailPageContent() {
                             </p>
                           </div>
                         ) : (
-                          playlistItems.map((item, index) => {
-                            const video =
-                              typeof item.video === "object" && item.video
-                                ? item.video
-                                : null;
-                            const addedBy =
-                              typeof item.addBy === "object" && item.addBy
-                                ? item.addBy
-                                : null;
+                          <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}>
+                            <SortableContext
+                              items={playlistItemIds}
+                              strategy={verticalListSortingStrategy}>
+                              <div className="pr-2 w-full">
+                                {validPlaylistItems.map((item) => {
+                                  const video =
+                                    typeof item.video === "object" && item.video
+                                      ? item.video
+                                      : null;
+                                  const addedBy =
+                                    typeof item.addBy === "object" && item.addBy
+                                      ? item.addBy
+                                      : null;
+                                  const itemId =
+                                    (item as any).id || (item as any)._id;
 
-                            return (
-                              <div
-                                key={`${item.room}-${index}`}
-                                className="flex gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer">
-                                <div className="relative shrink-0">
-                                  <div className="w-32 h-20 bg-linear-to-br from-gray-800 to-gray-900 rounded overflow-hidden">
-                                    {/* {video?.thumbnail ? (
-                                      <img
-                                        src={video.thumbnail}
-                                        alt={video.name || "Video thumbnail"}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center">
-                                        <Film
-                                          size={24}
-                                          className="text-white/20"
-                                        />
-                                      </div>
-                                    )} */}
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      <Film
-                                        size={24}
-                                        className="text-white/20"
-                                      />
-                                    </div>
-                                  </div>
-                                  {video?.durationMinutes && (
-                                    <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-xs text-white">
-                                      {video.durationMinutes}
-                                    </div>
-                                  )}
-                                  <div className="absolute top-1 left-1 bg-primary/90 px-1.5 py-0.5 rounded text-xs text-white font-semibold">
-                                    #{item.position}
-                                  </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="text-sm font-medium text-white truncate">
-                                    {video?.title || "Unknown Video"}
-                                  </h4>
-                                  <p className="text-xs text-white/60 mt-1">
-                                    Added by {addedBy?.username || "Unknown"}
-                                  </p>
-                                </div>
+                                  return (
+                                    <SortablePlaylistItem
+                                      key={itemId}
+                                      id={itemId}
+                                      video={video}
+                                      addedBy={addedBy}
+                                      canDelete={canControlPlaylist}
+                                      canDrag={canControlPlaylist}
+                                      onDelete={handleRemoveFromPlaylist}
+                                      isDeleting={deletingItemId === itemId}
+                                    />
+                                  );
+                                })}
                               </div>
-                            );
-                          })
+                            </SortableContext>
+                          </DndContext>
                         )}
                       </div>
                     </ScrollArea>

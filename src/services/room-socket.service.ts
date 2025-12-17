@@ -4,6 +4,10 @@ import { RoomMessage } from "../types/room-message.types";
 import { RoomMember } from "../types/room-member.types";
 import { RoomPlaylist } from "../types/room-playlist.types";
 import { IRoomSetting } from "../types/room-setting.types";
+import {
+  PlaylistUpdatedEvent,
+  PlaylistOperationResponse,
+} from "../types/room-playlist-event.types";
 
 export interface JoinRoomPayload {
   roomCode: string;
@@ -93,11 +97,19 @@ class RoomSocketService {
 
       this.socket = socketService.connect("room");
 
-      this.socket.once("authenticated", (data: { success: boolean; userId: string; username: string; timestamp: string }) => {
-        console.log("Room socket authenticated:", data);
-        this.isAuthenticated = true;
-        resolve(this.socket!);
-      });
+      this.socket.once(
+        "authenticated",
+        (data: {
+          success: boolean;
+          userId: string;
+          username: string;
+          timestamp: string;
+        }) => {
+          console.log("Room socket authenticated:", data);
+          this.isAuthenticated = true;
+          resolve(this.socket!);
+        }
+      );
 
       this.socket.once("connect_error", (error) => {
         console.error("Room socket connection error:", error);
@@ -134,10 +146,16 @@ class RoomSocketService {
 
       this.socket!.once("error", errorListener);
 
-      this.socket!.emit("joinRoom", { roomCode }, (response: JoinRoomResponse) => {
-        this.socket!.off("error", errorListener);
-        response.success ? resolve(response) : reject(new Error("Failed to join room"));
-      });
+      this.socket!.emit(
+        "joinRoom",
+        { roomCode },
+        (response: JoinRoomResponse) => {
+          this.socket!.off("error", errorListener);
+          response.success
+            ? resolve(response)
+            : reject(new Error("Failed to join room"));
+        }
+      );
     });
   }
 
@@ -158,13 +176,22 @@ class RoomSocketService {
     this.socket?.on("userLeft", callback);
   }
 
-  async sendMessage(roomCode: string, content: string): Promise<SendMessageResponse> {
+  async sendMessage(
+    roomCode: string,
+    content: string
+  ): Promise<SendMessageResponse> {
     if (!this.socket?.connected) throw new Error("Socket not connected");
 
     return new Promise((resolve, reject) => {
-      this.socket!.emit("sendMessage", { roomCode, content }, (response: SendMessageResponse) => {
-        response.success ? resolve(response) : reject(new Error("Failed to send message"));
-      });
+      this.socket!.emit(
+        "sendMessage",
+        { roomCode, content },
+        (response: SendMessageResponse) => {
+          response.success
+            ? resolve(response)
+            : reject(new Error("Failed to send message"));
+        }
+      );
     });
   }
 
@@ -192,33 +219,163 @@ class RoomSocketService {
     this.socket?.on("forceDisconnect", callback);
   }
 
-  offNewMessage(): void { this.socket?.off("newMessage"); }
-  offUserJoined(): void { this.socket?.off("userJoined"); }
-  offUserLeft(): void { this.socket?.off("userLeft"); }
-  offMemberRemoved(): void { this.socket?.off("memberRemoved"); }
-  offMemberAdded(): void { this.socket?.off("memberAdded"); }
-  offUserKicked(): void { this.socket?.off("userKicked"); }
-  offUserRoleChanged(): void { this.socket?.off("userRoleChanged"); }
-  offForceDisconnect(): void { this.socket?.off("forceDisconnect"); }
+  offNewMessage(): void {
+    this.socket?.off("newMessage");
+  }
+  offUserJoined(): void {
+    this.socket?.off("userJoined");
+  }
+  offUserLeft(): void {
+    this.socket?.off("userLeft");
+  }
+  offMemberRemoved(): void {
+    this.socket?.off("memberRemoved");
+  }
+  offMemberAdded(): void {
+    this.socket?.off("memberAdded");
+  }
+  offUserKicked(): void {
+    this.socket?.off("userKicked");
+  }
+  offUserRoleChanged(): void {
+    this.socket?.off("userRoleChanged");
+  }
+  offForceDisconnect(): void {
+    this.socket?.off("forceDisconnect");
+  }
 
-  async kickUser(roomCode: string, targetUserId: string): Promise<KickUserResponse> {
+  async kickUser(
+    roomCode: string,
+    targetUserId: string
+  ): Promise<KickUserResponse> {
     if (!this.socket?.connected) throw new Error("Socket not connected");
 
     return new Promise((resolve, reject) => {
-      this.socket!.emit("kickUser", { roomCode, targetUserId }, (response: KickUserResponse) => {
-        response.success ? resolve(response) : reject(new Error("Failed to kick user"));
-      });
+      this.socket!.emit(
+        "kickUser",
+        { roomCode, targetUserId },
+        (response: KickUserResponse) => {
+          response.success
+            ? resolve(response)
+            : reject(new Error("Failed to kick user"));
+        }
+      );
     });
   }
 
-  async changeUserRole(roomCode: string, targetUserId: string, newRole: string): Promise<ChangeUserRoleResponse> {
+  async changeUserRole(
+    roomCode: string,
+    targetUserId: string,
+    newRole: string
+  ): Promise<ChangeUserRoleResponse> {
     if (!this.socket?.connected) throw new Error("Socket not connected");
 
     return new Promise((resolve, reject) => {
-      this.socket!.emit("changeUserRole", { roomCode, targetUserId, newRole }, (response: ChangeUserRoleResponse) => {
-        response.success ? resolve(response) : reject(new Error("Failed to change role"));
-      });
+      this.socket!.emit(
+        "changeUserRole",
+        { roomCode, targetUserId, newRole },
+        (response: ChangeUserRoleResponse) => {
+          response.success
+            ? resolve(response)
+            : reject(new Error("Failed to change role"));
+        }
+      );
     });
+  }
+
+  // ==================== PLAYLIST MANAGEMENT ====================
+
+  /**
+   * Add episode to playlist
+   * Requires MODERATOR+ permission
+   */
+  async addToPlaylist(
+    roomCode: string,
+    episodeId: string,
+    position?: number
+  ): Promise<PlaylistOperationResponse> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
+
+    return new Promise((resolve, reject) => {
+      this.socket!.emit(
+        "addToPlaylist",
+        { roomCode, episodeId, position },
+        (response: PlaylistOperationResponse) => {
+          if (response.success) {
+            resolve(response);
+          } else {
+            reject(new Error(response.message || "Failed to add to playlist"));
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Remove episode from playlist
+   * Requires MODERATOR+ permission
+   */
+  async removeFromPlaylist(
+    roomCode: string,
+    playlistItemId: string
+  ): Promise<PlaylistOperationResponse> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
+
+    return new Promise((resolve, reject) => {
+      this.socket!.emit(
+        "removeFromPlaylist",
+        { roomCode, playlistItemId },
+        (response: PlaylistOperationResponse) => {
+          if (response.success) {
+            resolve(response);
+          } else {
+            reject(
+              new Error(response.message || "Failed to remove from playlist")
+            );
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Reorder playlist (drag & drop)
+   * Requires MODERATOR+ permission
+   */
+  async reorderPlaylist(
+    roomCode: string,
+    playlistItemId: string,
+    newPosition: number
+  ): Promise<PlaylistOperationResponse> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
+
+    return new Promise((resolve, reject) => {
+      this.socket!.emit(
+        "reorderPlaylist",
+        { roomCode, playlistItemId, newPosition },
+        (response: PlaylistOperationResponse) => {
+          if (response.success) {
+            resolve(response);
+          } else {
+            reject(new Error(response.message || "Failed to reorder playlist"));
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Listen for playlist updates from server
+   */
+  onPlaylistUpdated(callback: (data: PlaylistUpdatedEvent) => void): void {
+    this.socket?.on("playlistUpdated", callback);
+  }
+
+  /**
+   * Remove playlist update listener
+   */
+  offPlaylistUpdated(): void {
+    this.socket?.off("playlistUpdated");
   }
 
   removeAllListeners(): void {

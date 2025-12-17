@@ -40,7 +40,10 @@ interface RoomState {
   removeMember: (userId: string) => void;
   updateMemberRole: (userId: string, newRole: string) => void;
   addPlaylistItem: (item: RoomPlaylist) => void;
-  removePlaylistItem: (videoId: string) => void;
+  removePlaylistItem: (itemId: string) => void;
+  updatePlaylistItemPosition: (itemId: string, item: RoomPlaylist) => void;
+  reorderPlaylistOptimistic: (oldIndex: number, newIndex: number) => void;
+  setPlaylistItems: (items: RoomPlaylist[]) => void;
 }
 
 export const useRoomStore = create<RoomState>((set, get) => ({
@@ -258,16 +261,52 @@ export const useRoomStore = create<RoomState>((set, get) => ({
     })),
 
   addPlaylistItem: (item) =>
-    set((state) => ({
-      playlistItems: [...state.playlistItems, item],
-    })),
+    set((state) => {
+      // Check if item already exists to avoid duplicates
+      const itemId = (item as any).id || (item as any)._id;
+      const exists = state.playlistItems.some((existingItem) => {
+        const existingId = (existingItem as any).id || (existingItem as any)._id;
+        return existingId === itemId;
+      });
+      
+      if (exists) {
+        return state;
+      }
+      
+      return {
+        playlistItems: [...state.playlistItems, item].sort((a, b) => a.position - b.position),
+      };
+    }),
 
-  removePlaylistItem: (videoId) =>
+  removePlaylistItem: (itemId) =>
     set((state) => ({
       playlistItems: state.playlistItems.filter((item) => {
-        const itemVideoId =
-          typeof item.video === "string" ? item.video : item.video.id;
-        return itemVideoId !== videoId;
+        // Item có thể có id hoặc cần so sánh với item._id tùy backend
+        const currentItemId = (item as any).id || (item as any)._id;
+        return currentItemId !== itemId;
       }),
     })),
+
+  updatePlaylistItemPosition: (itemId, updatedItem) =>
+    set((state) => ({
+      playlistItems: state.playlistItems
+        .map((item) => {
+          const currentItemId = (item as any).id || (item as any)._id;
+          return currentItemId === itemId ? updatedItem : item;
+        })
+        .sort((a, b) => a.position - b.position),
+    })),
+
+  // Optimistic reorder without waiting for server
+  reorderPlaylistOptimistic: (oldIndex, newIndex) =>
+    set((state) => {
+      const items = [...state.playlistItems];
+      const [movedItem] = items.splice(oldIndex, 1);
+      items.splice(newIndex, 0, movedItem);
+      return { playlistItems: items };
+    }),
+
+  // Set playlist items (for rollback or server updates)
+  setPlaylistItems: (items) =>
+    set({ playlistItems: items }),
 }));
