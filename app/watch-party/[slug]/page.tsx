@@ -52,6 +52,8 @@ import {
   type ForceDisconnectEvent,
 } from "@/src/services/room-socket.service";
 import { RoomMessage, TypeMessage } from "@/src/types/room-message.types";
+import { episodeService } from "@/src/services/episode.service";
+import { Episode } from "@/src/types/episode.types";
 
 function RoomDetailPageContent() {
   const params = useParams<{ slug: string }>();
@@ -89,6 +91,9 @@ function RoomDetailPageContent() {
   const [verifying, setVerifying] = useState(false);
   const [activeTab, setActiveTab] = useState("chat");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Episode[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
   const [onlineMembers, setOnlineMembers] = useState<UserJoinedEvent[]>([]);
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -98,6 +103,35 @@ function RoomDetailPageContent() {
   const [actionLoading, setActionLoading] = useState(false);
   const [isForceDisconnected, setIsForceDisconnected] = useState(false);
   const [disconnectReason, setDisconnectReason] = useState("");
+
+  // Debounced search effect
+  useEffect(() => {
+    const delayTimer = setTimeout(async () => {
+      if (searchQuery.trim()) {
+        setSearchLoading(true);
+        setShowSearchResults(true);
+        try {
+          const response = await episodeService.searchEpisode({
+            query: searchQuery,
+            page: 1,
+            limit: 10,
+          });
+          setSearchResults(response.data.episodes);
+        } catch (error) {
+          console.error("Search error:", error);
+          toast.error("Không thể tìm kiếm phim");
+          setSearchResults([]);
+        } finally {
+          setSearchLoading(false);
+        }
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(delayTimer);
+  }, [searchQuery]);
   const [redirectCountdown, setRedirectCountdown] = useState(3);
   const [isJoinedRoom, setIsJoinedRoom] = useState(false);
   const [joinError, setJoinError] = useState<string>("");
@@ -671,8 +705,90 @@ function RoomDetailPageContent() {
                   placeholder="Tìm kiếm phim, video..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
                   className="pl-9 h-9 bg-white/5 border-white/10 text-white placeholder:text-white/40"
                 />
+                
+                {/* Search Results Dropdown */}
+                {showSearchResults && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+                    {searchLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="flex items-center gap-2 text-white/60">
+                          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-sm">Đang tìm kiếm...</span>
+                        </div>
+                      </div>
+                    ) : searchResults.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-white/40 text-sm">Không tìm thấy kết quả</p>
+                        <p className="text-white/30 text-xs mt-1">Thử tìm kiếm với từ khóa khác</p>
+                      </div>
+                    ) : (
+                      <div className="p-2 space-y-1">
+                        {searchResults.map((episode) => (
+                          <div
+                            key={episode.id}
+                            className="flex gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors group"
+                          >
+                            <div className="relative shrink-0">
+                              <div className="w-24 h-16 bg-gradient-to-br from-gray-800 to-gray-900 rounded overflow-hidden">
+                                {episode.thumbnailUrl ? (
+                                  <img
+                                    src={episode.thumbnailUrl}
+                                    alt={episode.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Film size={20} className="text-white/20" />
+                                  </div>
+                                )}
+                              </div>
+                              {episode.durationMinutes && (
+                                <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-xs text-white">
+                                  {episode.durationMinutes}m
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-medium text-white truncate">
+                                  {episode.title}
+                                </h4>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  // TODO: Add to playlist functionality
+                                  toast.success(`Đã thêm "${episode.title}" vào playlist`);
+                                  setShowSearchResults(false);
+                                  setSearchQuery("");
+                                }}
+                                className="shrink-0 bg-primary hover:bg-primary/90 text-white h-8 px-3 text-xs"
+                              >
+                                Thêm
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Close button */}
+                    <div className="border-t border-white/10 p-2">
+                      <button
+                        onClick={() => {
+                          setShowSearchResults(false);
+                          setSearchQuery("");
+                        }}
+                        className="w-full text-xs text-white/60 hover:text-white py-2 transition-colors"
+                      >
+                        Đóng
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
