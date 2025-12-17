@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiClient } from "./api.service";
 import type { Movie } from "@/src/types/movie.types";
 import type { FindMoviesQueryDto, PaginationMeta } from "@/src/types/index";
@@ -123,4 +124,3 @@ export class MovieService {
 
 // Export instance để sử dụng
 export const movieService = new MovieService();
-
