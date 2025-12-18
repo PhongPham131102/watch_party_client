@@ -808,6 +808,7 @@ const RoomDetailPageContent = () => {
     <div className="pt-16  h-screen bg-linear-to-b from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] flex flex-col overflow-hidden">
       {/* Room Header */}
       <RoomHeader
+        userRole={userRole}
         roomName={room?.name || ""}
         roomCode={room?.code || ""}
         roomType={room?.type || "public"}
@@ -864,7 +865,9 @@ const RoomDetailPageContent = () => {
                       <TooltipTrigger asChild>
                         <TabsTrigger
                           value="chat"
-                          className="text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
+                          className="text-white/60 hover:text-white hover:bg-white/5  aria-selected:bg-primary/60
+    aria-selected:text-white
+    aria-selected:shadow-lg bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <Send size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
                             Tin nhắn
@@ -880,7 +883,9 @@ const RoomDetailPageContent = () => {
                       <TooltipTrigger asChild>
                         <TabsTrigger
                           value="members"
-                          className="min-w-32 text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
+                          className="min-w-32 text-white/60 hover:text-white hover:bg-white/5  aria-selected:bg-primary/60
+    aria-selected:text-white
+    aria-selected:shadow-lg bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <Users size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
                             Thành viên ({members.length})
@@ -896,7 +901,9 @@ const RoomDetailPageContent = () => {
                       <TooltipTrigger asChild>
                         <TabsTrigger
                           value="playlist"
-                          className="text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
+                          className="text-white/60 hover:text-white hover:bg-white/5  aria-selected:bg-primary/60
+    aria-selected:text-white
+    aria-selected:shadow-lg bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <ListVideo size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
                             D.sách phát
@@ -912,7 +919,9 @@ const RoomDetailPageContent = () => {
                       <TooltipTrigger asChild>
                         <TabsTrigger
                           value="settings"
-                          className="text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
+                          className="text-white/60 hover:text-white hover:bg-white/5  aria-selected:bg-primary/60
+    aria-selected:text-white
+    aria-selected:shadow-lg bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <Settings size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
                             Cài đặt

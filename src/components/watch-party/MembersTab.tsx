@@ -43,12 +43,10 @@ export function MembersTab({
 
               const roleLabel =
                 role === "owner"
-                  ? "Owner"
-                  : role === "admin"
-                  ? "Admin"
+                  ? "Chủ phòng"
                   : role === "moderator"
-                  ? "Moderator"
-                  : "Members";
+                  ? "Quản trị viên"
+                  : "Thành viên";
 
               return (
                 <div key={role}>
@@ -93,7 +91,7 @@ export function MembersTab({
                               )}
                             </p>
                             <p className="text-xs text-white/40 capitalize">
-                              {role}
+                              {roleLabel}
                             </p>
                           </div>
                         </div>
