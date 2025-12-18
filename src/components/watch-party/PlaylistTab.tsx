@@ -54,7 +54,7 @@ export function PlaylistTab({
   );
 
   return (
-    <ScrollArea className="h-full">
+    <ScrollArea className="h-full max-h-[calc(100vh-200px)]">
       <div className="py-2 w-full">
         {playlistItems.length === 0 ? (
           <div className="text-center py-8">

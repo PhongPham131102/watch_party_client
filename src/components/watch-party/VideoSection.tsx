@@ -58,7 +58,7 @@ export function VideoSection({
 }: VideoSectionProps) {
   console.log("VideoSection render with episode:", videoState);
   return (
-    <div className="flex flex-col h-full gap-2 p-1">
+    <div className="flex flex-col h-full max-h-[calc(100vh-120px)] gap-2 p-1">
       {/* Search Bar */}
       <div className="bg-white/5 shrink-0">
         <div className="relative">

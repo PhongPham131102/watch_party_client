@@ -35,7 +35,9 @@ export function ChatTab({
 }: ChatTabProps) {
   return (
     <>
-      <ScrollArea ref={scrollAreaRef} className="flex-1 max-h-[74vh] p-4">
+      <ScrollArea
+        ref={scrollAreaRef}
+        className="flex-1 max-h-[calc(100vh-245px)] p-4">
         <div className="space-y-3">
           {/* Loading indicator at top */}
           {loadingMoreMessages && (
@@ -100,7 +102,9 @@ export function ChatTab({
                         <span className="text-xs text-white/40">
                           {messageTime}
                         </span>
-                        <span className="text-sm font-medium text-white">Bạn</span>
+                        <span className="text-sm font-medium text-white">
+                          Bạn
+                        </span>
                       </div>
                       <div className="bg-primary/90 rounded-lg px-3 py-2">
                         <p className="text-sm text-white">{message.content}</p>
@@ -123,7 +127,9 @@ export function ChatTab({
                       <span className="text-sm font-medium text-white">
                         {username}
                       </span>
-                      <span className="text-xs text-white/40">{messageTime}</span>
+                      <span className="text-xs text-white/40">
+                        {messageTime}
+                      </span>
                     </div>
                     <div className="bg-white/10 rounded-lg px-3 py-2">
                       <p className="text-sm text-white/90">{message.content}</p>

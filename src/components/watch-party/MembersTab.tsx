@@ -28,7 +28,7 @@ export function MembersTab({
   onMemberClick,
 }: MembersTabProps) {
   return (
-    <ScrollArea className="h-full p-4">
+    <ScrollArea className="h-full max-h-[calc(100vh-245px)] p-4">
       <div className="space-y-2">
         {members.length === 0 ? (
           <div className="text-center py-8">
