@@ -335,11 +335,13 @@ const RoomDetailPageContent = () => {
             });
             setCurrentPlayingItem(newPlayingItem || null);
           }
-          console.log("response.currentState: ", response.currentState);
           setVideoState({
             ...response.currentState,
             current_time: correctedCurrentTime,
           });
+        } else {
+          setCurrentPlayingItem(null);
+          setVideoState(null);
         }
         setIsJoinedRoom(true);
         toast.success("Đã tham gia phòng thành công!");
@@ -808,7 +810,11 @@ const RoomDetailPageContent = () => {
           <VideoSection
             roomCode={room?.code || ""}
             videoState={videoState}
-            episode={(currentPlayingItem?.video as Episode) || null}
+            episode={
+              currentPlayingItem?.video
+                ? (currentPlayingItem?.video as Episode)
+                : null
+            }
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onSearchFocus={() =>

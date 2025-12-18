@@ -163,20 +163,20 @@ export function VideoSection({
 
       {/* Video Player */}
       <div className="bg-black overflow-hidden border border-white/10 flex-1 min-h-0 rounded-sm">
-        {/* <div className="rounded-sm h-full flex items-center justify-center bg-linear-to-br from-gray-900 to-black">
-          <div className="text-center">
-            <Film className="w-16 h-16 text-white/20 mx-auto mb-3" />
-            <p className="text-white/60 text-base">
-              You&apos;re not watching anything!
-            </p>
-            <p className="text-white/40 text-xs mt-1">
-              Pick something to watch above.
-            </p>
+        {!episode ? (
+          <div className="rounded-sm h-full flex items-center justify-center bg-linear-to-br from-gray-900 to-black">
+            <div className="text-center">
+              <Film className="w-16 h-16 text-white/20 mx-auto mb-3" />
+              <p className="text-white/60 text-base">
+                Chưa có video nào trong danh sách phát
+              </p>
+              <p className="text-white/40 text-xs mt-1">
+                Hãy tìm và chọn phim yêu thích của bạn.
+              </p>
+            </div>
           </div>
-        </div> */}
-
-        <div className="w-full h-full">
-          {episode && (
+        ) : (
+          <div className="w-full h-full">
             <VideoRoomPlayer
               roomCode={roomCode}
               episode={episode!}
@@ -191,8 +191,8 @@ export function VideoSection({
               hasNext={hasNext}
               hasPrevious={hasPrevious}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
