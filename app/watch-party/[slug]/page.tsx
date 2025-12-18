@@ -25,6 +25,11 @@ import {
   type UserKickedEvent,
   type UserRoleChangedEvent,
   type ForceDisconnectEvent,
+  PlayNextVideoPayload,
+  PlayOrPauseVideoPayload,
+  PlayPreviousPayload,
+  SeekVideoPayload,
+
 } from "@/src/services/room-socket.service";
 import { RoomMessage } from "@/src/types/room-message.types";
 import { episodeService } from "@/src/services/episode.service";
@@ -48,12 +53,13 @@ import {
 import { MemberManagementDialog } from "@/src/components/watch-party/dialogs/MemberManagementDialog";
 import { ForceDisconnectDialog } from "@/src/components/watch-party/dialogs/ForceDisconnectDialog";
 import { RoomPlaylist } from "@/src/types/room-playlist.types";
+import { socketService } from "@/src/services/socket.service";
 
-function RoomDetailPageContent() {
+const RoomDetailPageContent = () => {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const slug = params?.slug as string | undefined;
-
+  const socket = socketService.getSocket("room");
   const { user: currentUser } = useAuthStore();
 
   const {
@@ -69,6 +75,7 @@ function RoomDetailPageContent() {
     playlistItems,
     settings,
     currentPlayingItem,
+    videoState,
     fetchRoom,
     clearRoom,
     setShowPasswordDialog,
@@ -85,6 +92,7 @@ function RoomDetailPageContent() {
     reorderPlaylistOptimistic,
     setPlaylistItems,
     setCurrentPlayingItem,
+    setVideoState,
   } = useRoomStore();
   const playlistRef = useRef<RoomPlaylist[]>([]);
   useEffect(() => {
@@ -279,6 +287,7 @@ function RoomDetailPageContent() {
             const itemId = (item.video as any).id;
             return itemId === data.current_video_id;
           });
+          setVideoState(data);
           setCurrentPlayingItem(newPlayingItem || null);
         });
         // Listen for force disconnect (when user opens room in another tab)
@@ -743,13 +752,18 @@ function RoomDetailPageContent() {
         roomCode={room?.code || ""}
         roomType={room?.type || "public"}
         isOwner={isOwner}
-        onLeaveRoom={() => router.push("/watch-party")}
+        onLeaveRoom={() => {
+          clearRoom();
+          router.push("/watch-party");
+        }}
       />
 
       <div className="flex-1 overflow-hidden">
         <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-0">
           {/* Left Side - Video Section */}
           <VideoSection
+            roomCode={room?.code || ""}
+            videoState={videoState}
             episode={(currentPlayingItem?.video as Episode) || null}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -765,6 +779,15 @@ function RoomDetailPageContent() {
               setShowSearchResults(false);
               setSearchQuery("");
             }}
+            currentTime={videoState?.current_time || 0}
+            isPlaying={videoState?.is_playing == "playing"}
+            updatedAt={videoState?.updated_at || 0}
+            onNextEpisode={(data) => roomSocketService.nextVideo(data)}
+            onPlay={(data) => roomSocketService.playOrPauseVideo(data)}
+            onPause={(data) => roomSocketService.playOrPauseVideo(data)}
+            onPreviousEpisode={(data) => roomSocketService.previousVideo(data)}
+            onSeek={(data) => roomSocketService.seekVideo(data)}
+
           />
 
           {/* Right Side - Tabs */}

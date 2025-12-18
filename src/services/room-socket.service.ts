@@ -14,7 +14,25 @@ import {
 export interface JoinRoomPayload {
   roomCode: string;
 }
-
+export interface PlayNextVideoPayload {
+  roomCode: string;
+}
+export interface PlayOrPauseVideoPayload {
+  roomCode: string;
+  isplaying: boolean;
+  currentTime: number;
+}
+export interface PlayPreviousPayload {
+  roomCode: string;
+}
+export interface PlayVideoFromPlaylistPayload {
+  roomCode: string;
+  playlistItemId: string;
+}
+export interface SeekVideoPayload {
+  roomCode: string;
+  currentTime: number;
+}
 export interface LeaveRoomPayload {
   roomCode: string;
 }
@@ -365,7 +383,28 @@ class RoomSocketService {
       );
     });
   }
-
+  async nextVideo(data: PlayNextVideoPayload): Promise<void> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
+    this.socket.emit("nextVideo", data);
+  }
+  async playOrPauseVideo(data: PlayOrPauseVideoPayload): Promise<void> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
+    this.socket.emit("playOrPauseVideo", data);
+  }
+  async previousVideo(data: PlayPreviousPayload): Promise<void> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
+    this.socket.emit("previousVideo", data);
+  }
+  async playVideoFromPlaylist(
+    data: PlayVideoFromPlaylistPayload
+  ): Promise<void> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
+    this.socket.emit("playVideoFromPlaylist", data);
+  }
+  async seekVideo(data: SeekVideoPayload): Promise<void> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
+    this.socket.emit("seekVideo", data);
+  }
   /**
    * Listen for playlist updates from server
    */

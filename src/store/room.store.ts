@@ -6,6 +6,7 @@ import { RoomMessage } from "../types/room-message.types";
 import { RoomMember } from "../types/room-member.types";
 import { RoomPlaylist } from "../types/room-playlist.types";
 import { IRoomSetting } from "../types/room-setting.types";
+import { VideoChangedEvent } from "../types/room-playlist-event.types";
 
 interface RoomState {
   currentRoom: Room | null;
@@ -20,6 +21,7 @@ interface RoomState {
   members: RoomMember[];
   playlistItems: RoomPlaylist[];
   settings: IRoomSetting | null;
+  videoState: VideoChangedEvent | null;
 
   currentPlayingItem: RoomPlaylist | null;
   setCurrentRoom: (room: Room | null, isOwner?: boolean) => void;
@@ -46,6 +48,7 @@ interface RoomState {
   reorderPlaylistOptimistic: (oldIndex: number, newIndex: number) => void;
   setPlaylistItems: (items: RoomPlaylist[]) => void;
   setCurrentPlayingItem: (item: RoomPlaylist | null) => void;
+  setVideoState: (videoState: VideoChangedEvent | null) => void;
 }
 
 export const useRoomStore = create<RoomState>((set, get) => ({
@@ -62,6 +65,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   playlistItems: [],
   settings: null,
   currentPlayingItem: null,
+  videoState: null,
+  setVideoState: (videoState) => set({ videoState }),
   setCurrentPlayingItem: (item) => set({ currentPlayingItem: item }),
 
   setCurrentRoom: (room, isOwner = false) =>
@@ -142,6 +147,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       members: [],
       playlistItems: [],
       settings: null,
+      currentPlayingItem: null,
+      loading: false,
     }),
 
   setLoading: (loading) => set({ loading }),

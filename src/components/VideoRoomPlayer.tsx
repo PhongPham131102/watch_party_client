@@ -11,23 +11,25 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { PlayNextVideoPayload, PlayOrPauseVideoPayload, PlayPreviousPayload, SeekVideoPayload } from "../services/room-socket.service";
 
 interface VideoPlayerProps {
+  roomCode: string;
   episode: Episode;
   currentTime: number;
   isPlaying: boolean;
   updatedAt: number;
-  onPlay: () => void;
-  onPause: () => void;
-  onSeek: (time: number) => void;
-  onNextEpisode?: () => void;
-  onPreviousEpisode?: () => void;
+  onPlay: (data: PlayOrPauseVideoPayload) => void;
+  onPause: (data: PlayOrPauseVideoPayload) => void;
+  onSeek: (data: SeekVideoPayload) => void;
+  onNextEpisode?: (data: PlayNextVideoPayload) => void;
+  onPreviousEpisode?: (data: PlayPreviousPayload) => void;
   hasNext?: boolean;
   hasPrevious?: boolean;
-  useS3?: boolean;
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  roomCode,
   episode,
   currentTime,
   isPlaying,
@@ -39,7 +41,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onPreviousEpisode,
   hasNext = false,
   hasPrevious = false,
-  useS3 = true,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,9 +62,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isLoading, setIsLoading] = useState(true);
 
   // Determine effective URL and Qualities (fallback to Minio if S3 is empty)
-  const effectiveS3Url = useS3 && episode.masterM3u8S3;
-  const videoUrl = effectiveS3Url || episode.masterM3u8Minio;
-  const qualities = effectiveS3Url ? episode.qualitiesS3 : episode.qualitiesMinio;
+  const videoUrl = episode.masterM3u8Minio;
+  const qualities = episode.qualitiesMinio;
 
   // Initialize HLS
   useEffect(() => {
@@ -240,9 +240,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const togglePlay = () => {
     if (isPlaying) {
-      onPause();
+      onPause({ roomCode: roomCode, isplaying: false, currentTime: videoRef.current?.currentTime || 0 });
     } else {
-      onPlay();
+      onPlay({ roomCode: roomCode, isplaying: true, currentTime: videoRef.current?.currentTime || 0 });
     }
   };
 
@@ -253,7 +253,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const rect = progressBar.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
     const newTime = pos * duration;
-    onSeek(newTime);
+    onSeek({ currentTime: newTime, roomCode: roomCode });
   };
 
   const toggleMute = () => {
@@ -387,7 +387,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Episode Info Overlay */}
       {!videoError && (
         <div
-          className={`absolute top-0 left-0 right-0 p-6 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-300 z-20 ${showControls ? "opacity-100" : "opacity-0"
+          className={`absolute top-0 left-0 right-0 p-6 bg-linear-to-b from-black/80 to-transparent transition-opacity duration-300 z-20 ${showControls ? "opacity-100" : "opacity-0"
             }`}>
           <h2 className="text-white text-2xl font-bold mb-1">
             Tập {episode.episodeNumber}: {episode.title}
@@ -410,7 +410,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Controls */}
       {!videoError && (
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 transition-opacity duration-300 z-20 ${showControls ? "opacity-100" : "opacity-0"
+          className={`absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/90 to-transparent p-4 transition-opacity duration-300 z-20 ${showControls ? "opacity-100" : "opacity-0"
             }`}>
           {/* Progress Bar */}
           <div
@@ -442,7 +442,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
               {onPreviousEpisode && (
                 <button
-                  onClick={onPreviousEpisode}
+                  onClick={() => { onPreviousEpisode({ roomCode: roomCode }) }}
                   disabled={!hasPrevious}
                   className="text-white hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                   <SkipBack className="w-6 h-6" />
@@ -451,7 +451,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
               {onNextEpisode && (
                 <button
-                  onClick={onNextEpisode}
+                  onClick={() => { onNextEpisode({ roomCode: roomCode }) }}
                   disabled={!hasNext}
                   className="text-white hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                   <SkipForward className="w-6 h-6" />

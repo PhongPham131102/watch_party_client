@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Search, Film } from "lucide-react";
 import { Episode } from "@/src/types/episode.types";
 import VideoRoomPlayer from "../VideoRoomPlayer";
+import { VideoChangedEvent } from "@/src/types/room-playlist-event.types";
+import { PlayNextVideoPayload, PlayOrPauseVideoPayload, PlayPreviousPayload, SeekVideoPayload } from "@/src/services/room-socket.service";
 
 interface VideoSectionProps {
+  roomCode: string;
   searchQuery: string;
   episode: Episode | null;
   onSearchChange: (value: string) => void;
@@ -16,9 +19,22 @@ interface VideoSectionProps {
   addingToPlaylist: string | null;
   onAddToPlaylist: (episodeId: string, episodeTitle: string) => void;
   onCloseSearch: () => void;
+  videoState: VideoChangedEvent | null;
+  // Video Props
+  isPlaying: boolean;
+  currentTime: number;
+  updatedAt: number;
+  onPlay: (data: PlayOrPauseVideoPayload) => void;
+  onPause: (data: PlayOrPauseVideoPayload) => void;
+  onSeek: (data: SeekVideoPayload) => void;
+  onNextEpisode?: (data: PlayNextVideoPayload) => void;
+  onPreviousEpisode?: (data: PlayPreviousPayload) => void;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
 }
 
 export function VideoSection({
+  roomCode,
   episode,
   searchQuery,
   onSearchChange,
@@ -29,6 +45,17 @@ export function VideoSection({
   addingToPlaylist,
   onAddToPlaylist,
   onCloseSearch,
+  videoState,
+  isPlaying,
+  currentTime,
+  updatedAt,
+  onPlay,
+  onPause,
+  onSeek,
+  onNextEpisode,
+  onPreviousEpisode,
+  hasNext,
+  hasPrevious,
 }: VideoSectionProps) {
   return (
     <div className="flex flex-col h-full gap-2 p-1">
@@ -150,13 +177,18 @@ export function VideoSection({
         <div className="w-full h-full">
           {episode && (
             <VideoRoomPlayer
+              roomCode={roomCode}
               episode={episode!}
-              isPlaying={true}
-              onPause={() => { }}
-              onPlay={() => { }}
-              onSeek={() => { }}
-              updatedAt={0}
-              currentTime={0}
+              isPlaying={videoState?.is_playing == "playing"}
+              currentTime={videoState?.current_time || 0}
+              updatedAt={videoState?.updated_at || 0}
+              onPause={onPause}
+              onPlay={onPlay}
+              onSeek={onSeek}
+              onNextEpisode={onNextEpisode}
+              onPreviousEpisode={onPreviousEpisode}
+              hasNext={hasNext}
+              hasPrevious={hasPrevious}
             />
           )}
         </div>
