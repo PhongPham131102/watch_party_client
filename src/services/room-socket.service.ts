@@ -97,6 +97,7 @@ export interface JoinRoomResponse {
   members: RoomMember[];
   playlistItems: RoomPlaylist[];
   settings: IRoomSetting;
+  currentState?: VideoChangedEvent | null;
 }
 
 export interface SendMessageResponse {

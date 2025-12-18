@@ -49,7 +49,6 @@ import { MemberManagementDialog } from "@/src/components/watch-party/dialogs/Mem
 import { ForceDisconnectDialog } from "@/src/components/watch-party/dialogs/ForceDisconnectDialog";
 import { RoomPlaylist } from "@/src/types/room-playlist.types";
 
-
 const RoomDetailPageContent = () => {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
@@ -282,9 +281,23 @@ const RoomDetailPageContent = () => {
             const itemId = (item.video as any).id;
             return itemId === data.current_video_id;
           });
-          setVideoState(data);
+
+          const now = Date.now();
+          const latencySeconds = Math.max(0, (now - data.updated_at) / 1000);
+
+          const correctedCurrentTime =
+            data.is_playing === "playing"
+              ? data.current_time + latencySeconds
+              : data.current_time;
+
+          setVideoState({
+            ...data,
+            current_time: correctedCurrentTime,
+          });
+
           setCurrentPlayingItem(newPlayingItem || null);
         });
+
         // Listen for force disconnect (when user opens room in another tab)
         roomSocketService.onForceDisconnect((data: ForceDisconnectEvent) => {
           console.log("Force disconnect:", data);
@@ -304,6 +317,30 @@ const RoomDetailPageContent = () => {
           playlistItems: response.playlistItems,
           settings: response.settings,
         });
+        if (response.currentState) {
+          const now = Date.now();
+          const latencySeconds = Math.max(
+            0,
+            (now - response.currentState.updated_at) / 1000
+          );
+
+          const correctedCurrentTime =
+            response.currentState.is_playing === "playing"
+              ? response.currentState.current_time + latencySeconds
+              : response.currentState.current_time;
+          if (!!response.currentState.current_video_id) {
+            const newPlayingItem = response.playlistItems.find((item) => {
+              const itemId = (item.video as any).id;
+              return itemId === response?.currentState?.current_video_id;
+            });
+            setCurrentPlayingItem(newPlayingItem || null);
+          }
+          console.log("response.currentState: ", response.currentState);
+          setVideoState({
+            ...response.currentState,
+            current_time: correctedCurrentTime,
+          });
+        }
         setIsJoinedRoom(true);
         toast.success("Đã tham gia phòng thành công!");
       } catch (error: any) {
@@ -786,9 +823,6 @@ const RoomDetailPageContent = () => {
               setShowSearchResults(false);
               setSearchQuery("");
             }}
-            currentTime={videoState?.current_time || 0}
-            isPlaying={videoState?.is_playing == "playing"}
-            updatedAt={videoState?.updated_at || 0}
             onNextEpisode={(data) => roomSocketService.nextVideo(data)}
             onPlay={(data) => roomSocketService.playOrPauseVideo(data)}
             onPause={(data) => roomSocketService.playOrPauseVideo(data)}

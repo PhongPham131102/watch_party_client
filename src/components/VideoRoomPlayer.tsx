@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import { Episode } from "../types/episode.types";
@@ -11,7 +13,12 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { PlayNextVideoPayload, PlayOrPauseVideoPayload, PlayPreviousPayload, SeekVideoPayload } from "../services/room-socket.service";
+import {
+  PlayNextVideoPayload,
+  PlayOrPauseVideoPayload,
+  PlayPreviousPayload,
+  SeekVideoPayload,
+} from "../services/room-socket.service";
 
 interface VideoPlayerProps {
   roomCode: string;
@@ -48,6 +55,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSyncingRef = useRef(false);
   const hlsRef = useRef<any>(null);
+  const isReadyRef = useRef(false);
+  const wantToPlayRef = useRef(isPlaying);
 
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -64,6 +73,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Determine effective URL and Qualities (fallback to Minio if S3 is empty)
   const videoUrl = episode.masterM3u8Minio;
   const qualities = episode.qualitiesMinio;
+  const endedOnceRef = useRef(false);
 
   // Initialize HLS
   useEffect(() => {
@@ -104,12 +114,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       hls.loadSource(videoUrl);
       hls.attachMedia(video);
 
-      hls.on(Hls.Events.MANIFEST_PARSED, function () {
+      hls.on(Hls.Events.MANIFEST_PARSED, async function () {
         console.log("✅ HLS manifest loaded successfully");
         setIsLoading(false);
-        // If playing state is true, try to play
-        if (isPlaying) {
-          video.play().catch(e => console.error("Auto-play error:", e));
+        isReadyRef.current = true;
+
+        if (isPlaying || wantToPlayRef.current) {
+          await attemptAutoplay(video);
         }
       });
 
@@ -149,12 +160,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
       // Also clear video src to stop loading if component unmounts
       if (video) {
-        video.removeAttribute('src');
+        video.removeAttribute("src");
         video.load();
       }
     };
   }, [videoUrl]);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
 
+    wantToPlayRef.current = isPlaying;
+
+    if (!isPlaying && !video.paused) {
+      video.pause();
+      return;
+    }
+
+    if (isPlaying && isReadyRef.current) {
+      attemptAutoplay(video); // ← THAY ĐỔI Ở ĐÂY
+    }
+  }, [isPlaying]);
   // Sync video state from props
   useEffect(() => {
     const video = videoRef.current;
@@ -240,9 +265,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const togglePlay = () => {
     if (isPlaying) {
-      onPause({ roomCode: roomCode, isplaying: false, currentTime: videoRef.current?.currentTime || 0 });
+      onPause({
+        roomCode: roomCode,
+        isplaying: false,
+        currentTime: videoRef.current?.currentTime || 0,
+      });
     } else {
-      onPlay({ roomCode: roomCode, isplaying: true, currentTime: videoRef.current?.currentTime || 0 });
+      onPlay({
+        roomCode: roomCode,
+        isplaying: true,
+        currentTime: videoRef.current?.currentTime || 0,
+      });
     }
   };
 
@@ -260,8 +293,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const video = videoRef.current;
     if (!video) return;
 
-    video.muted = !video.muted;
-    setIsMuted(!isMuted);
+    if (isMutedByAutoplay) {
+      handleUnmute();
+    } else {
+      video.muted = !video.muted;
+      setIsMuted(!isMuted);
+    }
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -334,9 +371,80 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return () => resizeObserver.disconnect();
   }, []);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleEnded = () => {
+      // tránh loop khi sync / seek
+      if (isSyncingRef.current) return;
+
+      // tránh trigger nhiều lần
+      if (endedOnceRef.current) return;
+      endedOnceRef.current = true;
+
+      // đảm bảo thật sự đã hết video
+      if (video.duration - video.currentTime > 0.5) return;
+
+      onNextEpisode?.({ roomCode });
+    };
+
+    video.addEventListener("ended", handleEnded);
+
+    return () => {
+      video.removeEventListener("ended", handleEnded);
+    };
+  }, [roomCode, onNextEpisode]);
+  useEffect(() => {
+    autoplayAttemptedRef.current = false;
+    setIsMutedByAutoplay(false);
+    endedOnceRef.current = false;
+  }, [episode.id]);
 
   const displayTime = isSyncingRef.current ? currentTime : localCurrentTime;
+  const [isMutedByAutoplay, setIsMutedByAutoplay] = useState(false);
+  const autoplayAttemptedRef = useRef(false);
+  const attemptAutoplay = async (video: HTMLVideoElement) => {
+    if (autoplayAttemptedRef.current) return;
+    autoplayAttemptedRef.current = true;
 
+    try {
+      await video.play();
+      console.log("✅ Autoplay successful");
+      setIsMutedByAutoplay(false);
+    } catch (error: any) {
+      if (error.name === "NotAllowedError") {
+        console.log("⚠️ Autoplay blocked, trying muted autoplay...");
+        try {
+          video.muted = true;
+          setIsMuted(true);
+          await video.play();
+          console.log("✅ Muted autoplay successful");
+          setIsMutedByAutoplay(true);
+        } catch (mutedError) {
+          
+          console.error("❌ Muted autoplay failed:", mutedError);
+        }
+      }
+    }
+  };
+  const handleUnmute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = false;
+    setIsMuted(false);
+    setIsMutedByAutoplay(false);
+
+    if (volume === 0) {
+      const newVolume = 0.7;
+      video.volume = newVolume;
+      setVolume(newVolume);
+    }
+
+    // Lưu preference
+    localStorage.setItem("user-has-unmuted", "true");
+  };
   return (
     <div
       ref={containerRef}
@@ -387,8 +495,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Episode Info Overlay */}
       {!videoError && (
         <div
-          className={`absolute top-0 left-0 right-0 p-6 bg-linear-to-b from-black/80 to-transparent transition-opacity duration-300 z-20 ${showControls ? "opacity-100" : "opacity-0"
-            }`}>
+          className={`absolute top-0 left-0 right-0 p-6 bg-linear-to-b from-black/80 to-transparent transition-opacity duration-300 z-20 ${
+            showControls ? "opacity-100" : "opacity-0"
+          }`}>
           <h2 className="text-white text-2xl font-bold mb-1">
             Tập {episode.episodeNumber}: {episode.title}
           </h2>
@@ -410,8 +519,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Controls */}
       {!videoError && (
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/90 to-transparent p-4 transition-opacity duration-300 z-20 ${showControls ? "opacity-100" : "opacity-0"
-            }`}>
+          className={`absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/90 to-transparent p-4 transition-opacity duration-300 z-20 ${
+            showControls ? "opacity-100" : "opacity-0"
+          }`}>
           {/* Progress Bar */}
           <div
             ref={progressBarRef}
@@ -442,7 +552,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
               {onPreviousEpisode && (
                 <button
-                  onClick={() => { onPreviousEpisode({ roomCode: roomCode }) }}
+                  onClick={() => {
+                    onPreviousEpisode({ roomCode: roomCode });
+                  }}
                   disabled={!hasPrevious}
                   className="text-white hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                   <SkipBack className="w-6 h-6" />
@@ -451,7 +563,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
               {onNextEpisode && (
                 <button
-                  onClick={() => { onNextEpisode({ roomCode: roomCode }) }}
+                  onClick={() => {
+                    onNextEpisode({ roomCode: roomCode });
+                  }}
                   disabled={!hasNext}
                   className="text-white hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                   <SkipForward className="w-6 h-6" />
@@ -499,20 +613,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     </div>
                     <button
                       onClick={() => handleQualityChange("auto")}
-                      className={`w-full text-left px-3 py-2 rounded hover:bg-white/10 text-sm transition-colors ${selectedQuality === "auto"
-                        ? "text-red-500"
-                        : "text-white"
-                        }`}>
+                      className={`w-full text-left px-3 py-2 rounded hover:bg-white/10 text-sm transition-colors ${
+                        selectedQuality === "auto"
+                          ? "text-red-500"
+                          : "text-white"
+                      }`}>
                       Tự động
                     </button>
                     {qualities.map((q) => (
                       <button
                         key={q.quality}
                         onClick={() => handleQualityChange(q.quality)}
-                        className={`w-full text-left px-3 py-2 rounded hover:bg-white/10 text-sm transition-colors ${selectedQuality === q.quality
-                          ? "text-red-500"
-                          : "text-white"
-                          }`}>
+                        className={`w-full text-left px-3 py-2 rounded hover:bg-white/10 text-sm transition-colors ${
+                          selectedQuality === q.quality
+                            ? "text-red-500"
+                            : "text-white"
+                        }`}>
                         {q.quality}
                       </button>
                     ))}

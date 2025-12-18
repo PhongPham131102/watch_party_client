@@ -5,7 +5,12 @@ import { Search, Film } from "lucide-react";
 import { Episode } from "@/src/types/episode.types";
 import VideoRoomPlayer from "../VideoRoomPlayer";
 import { VideoChangedEvent } from "@/src/types/room-playlist-event.types";
-import { PlayNextVideoPayload, PlayOrPauseVideoPayload, PlayPreviousPayload, SeekVideoPayload } from "@/src/services/room-socket.service";
+import {
+  PlayNextVideoPayload,
+  PlayOrPauseVideoPayload,
+  PlayPreviousPayload,
+  SeekVideoPayload,
+} from "@/src/services/room-socket.service";
 
 interface VideoSectionProps {
   roomCode: string;
@@ -20,10 +25,7 @@ interface VideoSectionProps {
   onAddToPlaylist: (episodeId: string, episodeTitle: string) => void;
   onCloseSearch: () => void;
   videoState: VideoChangedEvent | null;
-  // Video Props
-  isPlaying: boolean;
-  currentTime: number;
-  updatedAt: number;
+
   onPlay: (data: PlayOrPauseVideoPayload) => void;
   onPause: (data: PlayOrPauseVideoPayload) => void;
   onSeek: (data: SeekVideoPayload) => void;
@@ -46,9 +48,7 @@ export function VideoSection({
   onAddToPlaylist,
   onCloseSearch,
   videoState,
-  isPlaying,
-  currentTime,
-  updatedAt,
+
   onPlay,
   onPause,
   onSeek,
@@ -57,6 +57,7 @@ export function VideoSection({
   hasNext,
   hasPrevious,
 }: VideoSectionProps) {
+  console.log("VideoSection render with episode:", videoState);
   return (
     <div className="flex flex-col h-full gap-2 p-1">
       {/* Search Bar */}
