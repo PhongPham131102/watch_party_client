@@ -19,8 +19,10 @@ import {
   PlayPreviousPayload,
   SeekVideoPayload,
 } from "../services/room-socket.service";
+import { RoomMemberRole } from "../types/room-member.types";
 
 interface VideoPlayerProps {
+  userRole?: RoomMemberRole | null;
   roomCode: string;
   episode: Episode;
   currentTime: number;
@@ -36,6 +38,7 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  userRole = null,
   roomCode,
   episode,
   currentTime,
@@ -422,7 +425,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           console.log("✅ Muted autoplay successful");
           setIsMutedByAutoplay(true);
         } catch (mutedError) {
-          
           console.error("❌ Muted autoplay failed:", mutedError);
         }
       }
@@ -478,7 +480,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {videoError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black z-30">
           <div className="text-center px-4 max-w-2xl">
-            <p className="text-red-500 text-lg mb-3">⚠️ {videoError}</p>
             <p className="text-white/60 text-sm mb-2">Video URL:</p>
             <p className="text-white/40 text-xs break-all bg-white/5 p-3 rounded">
               {videoUrl}
@@ -499,22 +500,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             showControls ? "opacity-100" : "opacity-0"
           }`}>
           <h2 className="text-white text-2xl font-bold mb-1">
-            Tập {episode.episodeNumber}: {episode.title}
+            {episode.title}
           </h2>
-          <p className="text-gray-300 text-sm">{episode.description}</p>
         </div>
       )}
 
       {/* Center Play Button */}
-      {!isPlaying && !isLoading && !videoError && (
-        <div className="absolute inset-0 flex items-center justify-center z-20">
-          <button
-            onClick={togglePlay}
-            className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110">
-            <Play className="w-10 h-10 text-white ml-1" />
-          </button>
-        </div>
-      )}
+      {userRole !== RoomMemberRole.MEMBER &&
+        !isPlaying &&
+        !isLoading &&
+        !videoError && (
+          <div className="absolute inset-0 flex items-center justify-center z-20">
+            <button
+              onClick={togglePlay}
+              className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110">
+              <Play className="w-10 h-10 text-white ml-1" />
+            </button>
+          </div>
+        )}
 
       {/* Controls */}
       {!videoError && (
@@ -526,49 +529,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <div
             ref={progressBarRef}
             className="w-full h-2 bg-white/20 rounded-full mb-4 cursor-pointer group relative"
-            onClick={handleSeek}>
+            onClick={
+              userRole !== RoomMemberRole.MEMBER ? handleSeek : undefined
+            }>
             <div
               className="absolute h-full bg-white/30 rounded-full"
               style={{ width: `${buffered}%` }}
             />
             <div
-              className="absolute h-full bg-red-600 rounded-full group-hover:h-3 transition-all"
+              className="absolute h-full bg-primary rounded-full group-hover:h-2 transition-all"
               style={{ width: `${(displayTime / duration) * 100}%` }}>
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button
-                onClick={togglePlay}
-                className="text-white hover:text-red-500 transition-colors">
-                {isPlaying ? (
-                  <Pause className="w-8 h-8" />
-                ) : (
-                  <Play className="w-8 h-8" />
-                )}
-              </button>
-
-              {onPreviousEpisode && (
+              {userRole !== RoomMemberRole.MEMBER && (
                 <button
-                  onClick={() => {
-                    onPreviousEpisode({ roomCode: roomCode });
-                  }}
-                  disabled={!hasPrevious}
-                  className="text-white hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                  <SkipBack className="w-6 h-6" />
-                </button>
-              )}
-
-              {onNextEpisode && (
-                <button
-                  onClick={() => {
-                    onNextEpisode({ roomCode: roomCode });
-                  }}
-                  disabled={!hasNext}
-                  className="text-white hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                  <SkipForward className="w-6 h-6" />
+                  onClick={togglePlay}
+                  className="text-white hover:text-red-500 transition-colors">
+                  {isPlaying ? (
+                    <Pause className="w-8 h-8" />
+                  ) : (
+                    <Play className="w-8 h-8" />
+                  )}
                 </button>
               )}
 
@@ -589,7 +574,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   step="0.1"
                   value={isMuted ? 0 : volume}
                   onChange={handleVolumeChange}
-                  className="w-0 group-hover:w-20 transition-all opacity-0 group-hover:opacity-100"
+                  className="
+    w-0 group-hover:w-20
+    opacity-0 group-hover:opacity-100
+    transition-all
+    accent-primary
+  "
                 />
               </div>
 

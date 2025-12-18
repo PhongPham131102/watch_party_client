@@ -178,7 +178,14 @@ const RoomDetailPageContent = () => {
     const role = currentMember?.role;
     return role === "owner" || role === "moderator";
   }, [currentUser, members]);
-
+  const userRole = useMemo(() => {
+    if (!currentUser || !members.length) return null;
+    const currentMember = members.find((m) => {
+      const memberId = typeof m.user === "string" ? m.user : m.user?.id;
+      return memberId === currentUser.id;
+    });
+    return currentMember?.role || null;
+  }, [currentUser, members]);
   useEffect(() => {
     if (!slug) {
       toast.error("Không tìm thấy mã phòng");
@@ -808,6 +815,7 @@ const RoomDetailPageContent = () => {
         <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-0">
           {/* Left Side - Video Section */}
           <VideoSection
+            userRole={userRole}
             roomCode={room?.code || ""}
             videoState={videoState}
             episode={

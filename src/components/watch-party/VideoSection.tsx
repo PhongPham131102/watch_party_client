@@ -11,8 +11,10 @@ import {
   PlayPreviousPayload,
   SeekVideoPayload,
 } from "@/src/services/room-socket.service";
+import { RoomMemberRole } from "@/src/types/room-member.types";
 
 interface VideoSectionProps {
+  userRole: RoomMemberRole | null;
   roomCode: string;
   searchQuery: string;
   episode: Episode | null;
@@ -36,6 +38,7 @@ interface VideoSectionProps {
 }
 
 export function VideoSection({
+  userRole,
   roomCode,
   episode,
   searchQuery,
@@ -67,6 +70,9 @@ export function VideoSection({
           <Input
             type="text"
             placeholder="Tìm kiếm phim, video..."
+            disabled={
+              !!userRole && userRole === RoomMemberRole.MEMBER ? true : false
+            }
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             onFocus={onSearchFocus}
@@ -178,6 +184,7 @@ export function VideoSection({
         ) : (
           <div className="w-full h-full">
             <VideoRoomPlayer
+              userRole={userRole}
               roomCode={roomCode}
               episode={episode!}
               isPlaying={videoState?.is_playing == "playing"}
