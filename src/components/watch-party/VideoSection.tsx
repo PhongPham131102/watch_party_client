@@ -31,10 +31,8 @@ interface VideoSectionProps {
   onPlay: (data: PlayOrPauseVideoPayload) => void;
   onPause: (data: PlayOrPauseVideoPayload) => void;
   onSeek: (data: SeekVideoPayload) => void;
-  onNextEpisode?: (data: PlayNextVideoPayload) => void;
-  onPreviousEpisode?: (data: PlayPreviousPayload) => void;
-  hasNext?: boolean;
-  hasPrevious?: boolean;
+  onNextEpisode: (data: PlayNextVideoPayload) => void;
+  onPreviousEpisode: (data: PlayPreviousPayload) => void;
 }
 
 export function VideoSection({
@@ -57,8 +55,6 @@ export function VideoSection({
   onSeek,
   onNextEpisode,
   onPreviousEpisode,
-  hasNext,
-  hasPrevious,
 }: VideoSectionProps) {
   console.log("VideoSection render with episode:", videoState);
   return (
@@ -195,8 +191,6 @@ export function VideoSection({
               onSeek={onSeek}
               onNextEpisode={onNextEpisode}
               onPreviousEpisode={onPreviousEpisode}
-              hasNext={hasNext}
-              hasPrevious={hasPrevious}
             />
           </div>
         )}

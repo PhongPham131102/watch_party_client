@@ -20,6 +20,7 @@ import {
   SeekVideoPayload,
 } from "../services/room-socket.service";
 import { RoomMemberRole } from "../types/room-member.types";
+import { useRoomStore } from "../store/room.store";
 
 interface VideoPlayerProps {
   userRole?: RoomMemberRole | null;
@@ -31,10 +32,8 @@ interface VideoPlayerProps {
   onPlay: (data: PlayOrPauseVideoPayload) => void;
   onPause: (data: PlayOrPauseVideoPayload) => void;
   onSeek: (data: SeekVideoPayload) => void;
-  onNextEpisode?: (data: PlayNextVideoPayload) => void;
-  onPreviousEpisode?: (data: PlayPreviousPayload) => void;
-  hasNext?: boolean;
-  hasPrevious?: boolean;
+  onNextEpisode: (data: PlayNextVideoPayload) => void;
+  onPreviousEpisode: (data: PlayPreviousPayload) => void;
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -49,9 +48,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onSeek,
   onNextEpisode,
   onPreviousEpisode,
-  hasNext = false,
-  hasPrevious = false,
 }) => {
+  const { playlistItems, currentPlayingItem } = useRoomStore();
+  const hasNextRef = useRef(false);
+  const hasPreviousRef = useRef(false);
+  useEffect(() => {
+    if (currentPlayingItem == null) return;
+    const hasNext = playlistItems.some(
+      (item) => item.position > currentPlayingItem?.position
+    );
+    hasNextRef.current = hasNext;
+    const hasPrevious = playlistItems.some(
+      (item) => item.position < currentPlayingItem?.position
+    );
+    hasPreviousRef.current = hasPrevious;
+  }, [playlistItems, currentPlayingItem, episode]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
@@ -64,7 +75,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState<string>("auto");
@@ -320,10 +330,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     if (!document.fullscreenElement) {
       container.requestFullscreen();
-      setIsFullscreen(true);
     } else {
       document.exitFullscreen();
-      setIsFullscreen(false);
     }
   };
 
@@ -451,7 +459,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     <div
       ref={containerRef}
       style={containerStyle}
-      className="relative w-full bg-black overflow-hidden"
+      className="relative w-full bg-black overflow-hidden group"
       onMouseMove={handleMouseMove}
       onMouseLeave={() => isPlaying && setShowControls(false)}>
       {/* Video Element */}
@@ -506,18 +514,46 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       )}
 
       {/* Center Play Button */}
-      {userRole !== RoomMemberRole.MEMBER &&
-        !isPlaying &&
-        !isLoading &&
-        !videoError && (
-          <div className="absolute inset-0 flex items-center justify-center z-20">
-            <button
-              onClick={togglePlay}
-              className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110">
+      {userRole !== RoomMemberRole.MEMBER && !isLoading && !videoError && (
+        <div
+          className={`${
+            showControls ? "opacity-100" : "opacity-0"
+          } group-hover:flex absolute hidden inset-0  items-center justify-center z-20 gap-19`}>
+          <button
+            disabled={!hasPreviousRef.current}
+            onClick={() => onPreviousEpisode({ roomCode })}
+            className={`
+            w-16 h-16  backdrop-blur-sm rounded-full flex
+             items-center justify-center hover:bg-white/30 transition-all ${
+               hasPreviousRef.current
+                 ? "hover:scale-110 bg-white/20"
+                 : "hover:cursor-not-allowed! bg-white/10"
+             }`}>
+            <SkipBack className="w-8 h-8 text-white ml-1" />
+          </button>
+          <button
+            onClick={togglePlay}
+            className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all hover:scale-110">
+            {isPlaying ? (
+              <Pause className="w-10 h-10 text-white ml-1" />
+            ) : (
               <Play className="w-10 h-10 text-white ml-1" />
-            </button>
-          </div>
-        )}
+            )}
+          </button>
+          <button
+            disabled={!hasNextRef.current}
+            onClick={() => onNextEpisode({ roomCode })}
+            className={`
+            w-16 h-16  backdrop-blur-sm rounded-full flex
+             items-center justify-center hover:bg-white/30 transition-all ${
+               hasNextRef.current
+                 ? "hover:scale-110 bg-white/20"
+                 : "hover:cursor-not-allowed! bg-white/10"
+             }`}>
+            <SkipForward className="w-8 h-8 text-white ml-1" />
+          </button>
+        </div>
+      )}
 
       {/* Controls */}
       {!videoError && (
@@ -589,43 +625,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </div>
 
             <div className="flex items-center gap-3 relative">
-              <div className="relative">
-                <button
-                  onClick={() => setShowQualityMenu(!showQualityMenu)}
-                  className="text-white hover:text-red-500 transition-colors">
-                  <Settings className="w-6 h-6" />
-                </button>
-
-                {showQualityMenu && (
-                  <div className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-lg p-2 min-w-32">
-                    <div className="text-white text-sm font-semibold mb-2 px-2">
-                      Chất lượng
-                    </div>
-                    <button
-                      onClick={() => handleQualityChange("auto")}
-                      className={`w-full text-left px-3 py-2 rounded hover:bg-white/10 text-sm transition-colors ${
-                        selectedQuality === "auto"
-                          ? "text-red-500"
-                          : "text-white"
-                      }`}>
-                      Tự động
-                    </button>
-                    {qualities.map((q) => (
-                      <button
-                        key={q.quality}
-                        onClick={() => handleQualityChange(q.quality)}
-                        className={`w-full text-left px-3 py-2 rounded hover:bg-white/10 text-sm transition-colors ${
-                          selectedQuality === q.quality
-                            ? "text-red-500"
-                            : "text-white"
-                        }`}>
-                        {q.quality}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               <button
                 onClick={toggleFullscreen}
                 className="text-white hover:text-red-500 transition-colors">
