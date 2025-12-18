@@ -29,7 +29,10 @@ import {
 import { RoomMessage } from "@/src/types/room-message.types";
 import { episodeService } from "@/src/services/episode.service";
 import { Episode } from "@/src/types/episode.types";
-import { PlaylistUpdatedEvent } from "@/src/types/room-playlist-event.types";
+import {
+  PlaylistUpdatedEvent,
+  VideoChangedEvent,
+} from "@/src/types/room-playlist-event.types";
 
 // Import separated components
 import { RoomHeader } from "@/src/components/watch-party/RoomHeader";
@@ -44,6 +47,7 @@ import {
 } from "@/src/components/watch-party/dialogs/PasswordDialog";
 import { MemberManagementDialog } from "@/src/components/watch-party/dialogs/MemberManagementDialog";
 import { ForceDisconnectDialog } from "@/src/components/watch-party/dialogs/ForceDisconnectDialog";
+import { RoomPlaylist } from "@/src/types/room-playlist.types";
 
 function RoomDetailPageContent() {
   const params = useParams<{ slug: string }>();
@@ -64,6 +68,7 @@ function RoomDetailPageContent() {
     members,
     playlistItems,
     settings,
+    currentPlayingItem,
     fetchRoom,
     clearRoom,
     setShowPasswordDialog,
@@ -79,8 +84,12 @@ function RoomDetailPageContent() {
     updatePlaylistItemPosition,
     reorderPlaylistOptimistic,
     setPlaylistItems,
+    setCurrentPlayingItem,
   } = useRoomStore();
-
+  const playlistRef = useRef<RoomPlaylist[]>([]);
+  useEffect(() => {
+    playlistRef.current = playlistItems;
+  }, [playlistItems]);
   const handleForceDisconnectRedirect = useCallback(() => {
     clearRoom();
     router.push("/watch-party");
@@ -130,8 +139,6 @@ function RoomDetailPageContent() {
 
     return () => clearTimeout(delayTimer);
   }, [searchQuery]);
-
-
 
   const [isJoinedRoom, setIsJoinedRoom] = useState(false);
   const [joinError, setJoinError] = useState<string>("");
@@ -198,13 +205,11 @@ function RoomDetailPageContent() {
 
         // Listen for user joined
         roomSocketService.onUserJoined((data: UserJoinedEvent) => {
-          console.log("User joined:", data);
           toast.success(`${data.username} đã tham gia phòng`);
         });
 
         // Listen for user left
         roomSocketService.onUserLeft((data: UserLeftEvent) => {
-          console.log("User left:", data);
           toast.info(`${data.username} đã rời phòng`);
         });
 
@@ -215,19 +220,16 @@ function RoomDetailPageContent() {
 
         // Listen for member removed
         roomSocketService.onMemberRemoved((data: MemberRemovedEvent) => {
-          console.log("Member removed:", data);
           removeMember(data.userId);
         });
 
         // Listen for member added
         roomSocketService.onMemberAdded((data) => {
-          console.log("Member added:", data);
           addMember(data);
         });
 
         // Listen for user kicked
         roomSocketService.onUserKicked((data: UserKickedEvent) => {
-          console.log("User kicked:", data);
           if (data.userId === currentUser?.id) {
             toast.error("Bạn đã bị kick khỏi phòng");
             router.push("/watch-party");
@@ -236,7 +238,6 @@ function RoomDetailPageContent() {
 
         // Listen for user role changed
         roomSocketService.onUserRoleChanged((data: UserRoleChangedEvent) => {
-          console.log("User role changed:", data);
           updateMemberRole(data.userId, data.newRole);
           if (data.userId === currentUser?.id) {
             toast.info(`Quyền của bạn đã được thay đổi thành ${data.newRole}`);
@@ -245,8 +246,6 @@ function RoomDetailPageContent() {
 
         // Listen for playlist updated
         roomSocketService.onPlaylistUpdated((data: PlaylistUpdatedEvent) => {
-          console.log("Playlist updated:", data);
-
           // Kiểm tra xem action này có phải từ currentUser không
           const isOwnAction =
             (data.action === "add" && data.addedBy === currentUser?.id) ||
@@ -255,9 +254,6 @@ function RoomDetailPageContent() {
 
           // Nếu là action của mình thì bỏ qua (đã update optimistic rồi)
           if (isOwnAction && data.action === "reorder") {
-            console.log(
-              "Skipping own reorder action (already optimistically updated)"
-            );
             return;
           }
 
@@ -277,7 +273,14 @@ function RoomDetailPageContent() {
             }
           }
         });
-
+        //Listen for video changed
+        roomSocketService.onVideoChanged((data: VideoChangedEvent) => {
+          const newPlayingItem = playlistRef.current.find((item) => {
+            const itemId = (item.video as any).id;
+            return itemId === data.current_video_id;
+          });
+          setCurrentPlayingItem(newPlayingItem || null);
+        });
         // Listen for force disconnect (when user opens room in another tab)
         roomSocketService.onForceDisconnect((data: ForceDisconnectEvent) => {
           console.log("Force disconnect:", data);
@@ -289,7 +292,6 @@ function RoomDetailPageContent() {
 
         // Join room and get initial data from response
         const response = await roomSocketService.joinRoom(room.code);
-        console.log("Join room success:", response);
 
         // Update store with room data from response
         setRoomData({
@@ -327,6 +329,7 @@ function RoomDetailPageContent() {
       roomSocketService.offUserRoleChanged();
       roomSocketService.offForceDisconnect();
       roomSocketService.offPlaylistUpdated();
+      roomSocketService.offVideoChanged();
     };
   }, [
     room,
@@ -359,15 +362,9 @@ function RoomDetailPageContent() {
 
   const handleLoadMoreMessages = async () => {
     if (loadingMoreMessages || !room || !hasMoreMessages) {
-      console.log("Skip load more:", {
-        loadingMoreMessages,
-        hasRoom: !!room,
-        hasMoreMessages,
-      });
       return;
     }
 
-    console.log("Starting load more messages...");
     setLoadingMoreMessages(true);
 
     // Save scroll position before loading
@@ -379,7 +376,6 @@ function RoomDetailPageContent() {
 
     try {
       await loadMoreMessages();
-      console.log("Load more messages success!");
 
       // Restore scroll position after loading
       setTimeout(() => {
@@ -419,7 +415,7 @@ function RoomDetailPageContent() {
     try {
       await roomSocketService.sendMessage(room.code, chatMessage.trim());
       setChatMessage("");
-      // Keep focus on input after sending with small delay
+
       setTimeout(() => {
         if (chatInputRef.current) chatInputRef.current.focus();
       }, 100);
@@ -754,6 +750,7 @@ function RoomDetailPageContent() {
         <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-0">
           {/* Left Side - Video Section */}
           <VideoSection
+            episode={(currentPlayingItem?.video as Episode) || null}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onSearchFocus={() =>

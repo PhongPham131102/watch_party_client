@@ -3,9 +3,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Film } from "lucide-react";
 import { Episode } from "@/src/types/episode.types";
+import VideoRoomPlayer from "../VideoRoomPlayer";
 
 interface VideoSectionProps {
   searchQuery: string;
+  episode: Episode | null;
   onSearchChange: (value: string) => void;
   onSearchFocus: () => void;
   showSearchResults: boolean;
@@ -17,6 +19,7 @@ interface VideoSectionProps {
 }
 
 export function VideoSection({
+  episode,
   searchQuery,
   onSearchChange,
   onSearchFocus,
@@ -54,7 +57,9 @@ export function VideoSection({
                 </div>
               ) : searchResults.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-white/40 text-sm">Không tìm thấy kết quả</p>
+                  <p className="text-white/40 text-sm">
+                    Không tìm thấy kết quả
+                  </p>
                   <p className="text-white/30 text-xs mt-1">
                     Thử tìm kiếm với từ khóa khác
                   </p>
@@ -93,7 +98,9 @@ export function VideoSection({
                         </div>
                         <Button
                           size="sm"
-                          onClick={() => onAddToPlaylist(episode.id, episode.title)}
+                          onClick={() =>
+                            onAddToPlaylist(episode.id, episode.title)
+                          }
                           disabled={
                             addingToPlaylist === episode.id ||
                             episode.processingStatus !== "SUCCESS"
@@ -127,8 +134,8 @@ export function VideoSection({
       </div>
 
       {/* Video Player */}
-      <div className="bg-blackoverflow-hidden border border-white/10 flex-1 min-h-0 rounded-sm">
-        <div className="rounded-sm h-full flex items-center justify-center bg-linear-to-br from-gray-900 to-black">
+      <div className="bg-black overflow-hidden border border-white/10 flex-1 min-h-0 rounded-sm">
+        {/* <div className="rounded-sm h-full flex items-center justify-center bg-linear-to-br from-gray-900 to-black">
           <div className="text-center">
             <Film className="w-16 h-16 text-white/20 mx-auto mb-3" />
             <p className="text-white/60 text-base">
@@ -138,6 +145,20 @@ export function VideoSection({
               Pick something to watch above.
             </p>
           </div>
+        </div> */}
+
+        <div className="w-full h-full">
+          {episode && (
+            <VideoRoomPlayer
+              episode={episode!}
+              isPlaying={true}
+              onPause={() => { }}
+              onPlay={() => { }}
+              onSeek={() => { }}
+              updatedAt={0}
+              currentTime={0}
+            />
+          )}
         </div>
       </div>
     </div>

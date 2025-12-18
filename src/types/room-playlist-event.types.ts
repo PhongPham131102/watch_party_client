@@ -21,6 +21,12 @@ export interface PlaylistUpdatedEvent {
   isDuplicate?: boolean;
   duplicateCount?: number;
 }
+export interface VideoChangedEvent {
+  current_video_id?: string;
+  is_playing: "playing" | "paused";
+  current_time: number;
+  updated_at: number;
+}
 
 /**
  * DTO for adding episode to playlist

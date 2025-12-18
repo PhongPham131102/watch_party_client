@@ -1,5 +1,6 @@
 import { User } from ".";
-import { Episode } from "./movie.types";
+import { Episode } from "./episode.types";
+
 import { Room } from "./room.types";
 
 export interface RoomPlaylist {

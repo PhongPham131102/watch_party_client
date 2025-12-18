@@ -21,6 +21,7 @@ interface RoomState {
   playlistItems: RoomPlaylist[];
   settings: IRoomSetting | null;
 
+  currentPlayingItem: RoomPlaylist | null;
   setCurrentRoom: (room: Room | null, isOwner?: boolean) => void;
   fetchRoom: (slug: string) => Promise<void>;
   clearRoom: () => void;
@@ -44,6 +45,7 @@ interface RoomState {
   updatePlaylistItemPosition: (itemId: string, item: RoomPlaylist) => void;
   reorderPlaylistOptimistic: (oldIndex: number, newIndex: number) => void;
   setPlaylistItems: (items: RoomPlaylist[]) => void;
+  setCurrentPlayingItem: (item: RoomPlaylist | null) => void;
 }
 
 export const useRoomStore = create<RoomState>((set, get) => ({
@@ -59,6 +61,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   members: [],
   playlistItems: [],
   settings: null,
+  currentPlayingItem: null,
+  setCurrentPlayingItem: (item) => set({ currentPlayingItem: item }),
 
   setCurrentRoom: (room, isOwner = false) =>
     set({
@@ -265,16 +269,19 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       // Check if item already exists to avoid duplicates
       const itemId = (item as any).id || (item as any)._id;
       const exists = state.playlistItems.some((existingItem) => {
-        const existingId = (existingItem as any).id || (existingItem as any)._id;
+        const existingId =
+          (existingItem as any).id || (existingItem as any)._id;
         return existingId === itemId;
       });
-      
+
       if (exists) {
         return state;
       }
-      
+
       return {
-        playlistItems: [...state.playlistItems, item].sort((a, b) => a.position - b.position),
+        playlistItems: [...state.playlistItems, item].sort(
+          (a, b) => a.position - b.position
+        ),
       };
     }),
 
@@ -307,6 +314,5 @@ export const useRoomStore = create<RoomState>((set, get) => ({
     }),
 
   // Set playlist items (for rollback or server updates)
-  setPlaylistItems: (items) =>
-    set({ playlistItems: items }),
+  setPlaylistItems: (items) => set({ playlistItems: items }),
 }));

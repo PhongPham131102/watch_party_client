@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import { Socket } from "socket.io-client";
 import { socketService } from "./socket.service";
 import { RoomMessage } from "../types/room-message.types";
@@ -7,6 +8,7 @@ import { IRoomSetting } from "../types/room-setting.types";
 import {
   PlaylistUpdatedEvent,
   PlaylistOperationResponse,
+  VideoChangedEvent,
 } from "../types/room-playlist-event.types";
 
 export interface JoinRoomPayload {
@@ -377,7 +379,12 @@ class RoomSocketService {
   offPlaylistUpdated(): void {
     this.socket?.off("playlistUpdated");
   }
-
+  onVideoChanged(callback: (data: VideoChangedEvent) => void): void {
+    this.socket?.on("videoChanged", callback);
+  }
+  offVideoChanged(): void {
+    this.socket?.off("videoChanged");
+  }
   removeAllListeners(): void {
     this.socket?.removeAllListeners();
   }
