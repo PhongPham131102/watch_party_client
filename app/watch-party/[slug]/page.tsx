@@ -812,7 +812,7 @@ const RoomDetailPageContent = () => {
       />
 
       <div className="flex-1 overflow-hidden">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-0">
+        <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_450px] gap-0">
           {/* Left Side - Video Section */}
           <VideoSection
             userRole={userRole}
@@ -851,8 +851,8 @@ const RoomDetailPageContent = () => {
                 <Tabs
                   value={activeTab}
                   onValueChange={setActiveTab}
-                  className="flex-1 flex flex-col">
-                  <TabsList className="grid w-full grid-cols-4 bg-white/5 border-b border-white/10 rounded-none p-1 gap-1 h-auto">
+                  className=" flex flex-col">
+                  <TabsList className="flex w-full bg-white/5 border-b border-white/10 rounded-none p-1 gap-1 h-auto">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <TabsTrigger
@@ -860,7 +860,7 @@ const RoomDetailPageContent = () => {
                           className="text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <Send size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
-                            Chat
+                            Tin nhắn
                           </span>
                         </TabsTrigger>
                       </TooltipTrigger>
@@ -873,10 +873,10 @@ const RoomDetailPageContent = () => {
                       <TooltipTrigger asChild>
                         <TabsTrigger
                           value="members"
-                          className="text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
+                          className="min-w-32 text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <Users size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
-                            Members ({members.length})
+                            Thành viên ({members.length})
                           </span>
                         </TabsTrigger>
                       </TooltipTrigger>
@@ -892,7 +892,7 @@ const RoomDetailPageContent = () => {
                           className="text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <ListVideo size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
-                            Playlist
+                          D.sách phát
                           </span>
                         </TabsTrigger>
                       </TooltipTrigger>
@@ -908,7 +908,7 @@ const RoomDetailPageContent = () => {
                           className="text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <Settings size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
-                            Settings
+                            Cài đặt
                           </span>
                         </TabsTrigger>
                       </TooltipTrigger>
