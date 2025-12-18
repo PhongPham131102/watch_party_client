@@ -278,8 +278,8 @@ const RoomDetailPageContent = () => {
         //Listen for video changed
         roomSocketService.onVideoChanged((data: VideoChangedEvent) => {
           const newPlayingItem = playlistRef.current.find((item) => {
-            const itemId = (item.video as any).id;
-            return itemId === data.current_video_id;
+            const itemId = item.id;
+            return itemId === data.current_playlist_id;
           });
 
           const now = Date.now();
@@ -328,10 +328,10 @@ const RoomDetailPageContent = () => {
             response.currentState.is_playing === "playing"
               ? response.currentState.current_time + latencySeconds
               : response.currentState.current_time;
-          if (!!response.currentState.current_video_id) {
+          if (!!response.currentState.current_playlist_id) {
             const newPlayingItem = response.playlistItems.find((item) => {
-              const itemId = (item.video as any).id;
-              return itemId === response?.currentState?.current_video_id;
+              const itemId = item.id;
+              return itemId === response?.currentState?.current_playlist_id;
             });
             setCurrentPlayingItem(newPlayingItem || null);
           }
