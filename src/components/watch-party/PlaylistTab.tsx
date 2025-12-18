@@ -28,13 +28,17 @@ interface PlaylistItem {
 interface PlaylistTabProps {
   playlistItems: PlaylistItem[];
   playlistItemIds: string[];
+  curentPlaylistItemId: string | null;
   canControlPlaylist: boolean;
   deletingItemId: string | null;
   onDragEnd: (event: DragEndEvent) => void;
   onRemoveFromPlaylist: (itemId: string) => void;
+  onPlayItem: (itemId: string) => void;
 }
 
 export function PlaylistTab({
+  curentPlaylistItemId,
+  onPlayItem,
   playlistItems,
   playlistItemIds,
   canControlPlaylist,
@@ -82,6 +86,8 @@ export function PlaylistTab({
 
                   return (
                     <SortablePlaylistItem
+                      currentPlaylistItemId={curentPlaylistItemId}
+                      onClickPlay={onPlayItem}
                       key={itemId}
                       id={itemId}
                       video={video}

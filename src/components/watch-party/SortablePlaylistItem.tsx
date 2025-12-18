@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
-import { GripVertical, Film } from "lucide-react";
+import { GripVertical, Film, Play } from "lucide-react";
 
 interface SortablePlaylistItemProps {
   id: string;
@@ -13,6 +13,8 @@ interface SortablePlaylistItemProps {
   canDrag: boolean;
   onDelete: (id: string, title: string) => void;
   isDeleting: boolean;
+  onClickPlay: (playlistItemId: string) => void;
+  currentPlaylistItemId: string | null;
 }
 
 export function SortablePlaylistItem({
@@ -23,6 +25,8 @@ export function SortablePlaylistItem({
   canDrag,
   onDelete,
   isDeleting,
+  onClickPlay,
+  currentPlaylistItemId,
 }: SortablePlaylistItemProps) {
   const {
     attributes,
@@ -39,6 +43,8 @@ export function SortablePlaylistItem({
     opacity: isDragging ? 0.6 : 1,
     scale: isDragging ? 1.02 : 1,
   };
+
+  const isPlaying = id === currentPlaylistItemId;
 
   return (
     <div ref={setNodeRef} style={style} className="w-full px-2 my-2">
@@ -60,11 +66,40 @@ export function SortablePlaylistItem({
         <div className="relative">
           <div className="w-full aspect-video bg-linear-to-br from-gray-800 to-gray-900 rounded overflow-hidden">
             {video?.thumbnailUrl ? (
-              <img
-                src={video.thumbnailUrl}
-                alt={video.title || "Video thumbnail"}
-                className="w-full h-full object-cover"
-              />
+              <div
+                className={`w-full h-full group-hover:opacity-100 transition-opacity relative`}
+                {...(!isPlaying && {
+                  onClick: () => onClickPlay(id),
+                  style: { cursor: "pointer" },
+                })}>
+                <img
+                  src={video.thumbnailUrl}
+                  alt={video.title || "Video thumbnail"}
+                  className="w-full h-full object-cover"
+                />
+                <div
+                  className={`${
+                    isPlaying && "hidden"
+                  } absolute inset-0 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100
+                  `}>
+                  <Play size={24} className={"text-white"} />
+                </div>
+                {isPlaying && (
+                  <div className="flex space-x-1 absolute bottom-1/2 left-1/2 transform -translate-x-1/2 translate-y-1/2">
+                    {[...Array(4)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-1 bg-gray-300 rounded-full animate-pulse"
+                        style={{
+                          height: "15px",
+                          animationDelay: `${i * 0.15}s`,
+                          animationDuration: "0.6s",
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <Film size={20} className="text-white/20" />
@@ -83,7 +118,7 @@ export function SortablePlaylistItem({
             {video?.title || "Unknown Video"}
           </h4>
           <p className="text-xs text-white/60 mt-0.5 truncate">
-            Added by {addedBy?.username || "Unknown"}
+            Thêm bởi {addedBy?.username || "Unknown"}
           </p>
         </div>
 

@@ -25,11 +25,6 @@ import {
   type UserKickedEvent,
   type UserRoleChangedEvent,
   type ForceDisconnectEvent,
-  PlayNextVideoPayload,
-  PlayOrPauseVideoPayload,
-  PlayPreviousPayload,
-  SeekVideoPayload,
-
 } from "@/src/services/room-socket.service";
 import { RoomMessage } from "@/src/types/room-message.types";
 import { episodeService } from "@/src/services/episode.service";
@@ -53,13 +48,13 @@ import {
 import { MemberManagementDialog } from "@/src/components/watch-party/dialogs/MemberManagementDialog";
 import { ForceDisconnectDialog } from "@/src/components/watch-party/dialogs/ForceDisconnectDialog";
 import { RoomPlaylist } from "@/src/types/room-playlist.types";
-import { socketService } from "@/src/services/socket.service";
+
 
 const RoomDetailPageContent = () => {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const slug = params?.slug as string | undefined;
-  const socket = socketService.getSocket("room");
+
   const { user: currentUser } = useAuthStore();
 
   const {
@@ -461,7 +456,19 @@ const RoomDetailPageContent = () => {
       setActionLoading(false);
     }
   };
-
+  const handlePlayItem = async (itemId: string) => {
+    if (!room || actionLoading) return;
+    try {
+      await roomSocketService.playVideoFromPlaylist({
+        roomCode: room.code,
+        playlistItemId: itemId,
+      });
+    } catch (error) {
+      console.log("Failed to play item:", error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
   const handleChangeRole = async (userId: string, newRole: string) => {
     if (!room || actionLoading) return;
 
@@ -787,7 +794,6 @@ const RoomDetailPageContent = () => {
             onPause={(data) => roomSocketService.playOrPauseVideo(data)}
             onPreviousEpisode={(data) => roomSocketService.previousVideo(data)}
             onSeek={(data) => roomSocketService.seekVideo(data)}
-
           />
 
           {/* Right Side - Tabs */}
@@ -903,6 +909,8 @@ const RoomDetailPageContent = () => {
                     value="playlist"
                     className="flex-1 m-0 data-[state=inactive]:hidden">
                     <PlaylistTab
+                      curentPlaylistItemId={currentPlayingItem?.id || null}
+                      onPlayItem={handlePlayItem}
                       playlistItems={validPlaylistItems}
                       playlistItemIds={playlistItemIds}
                       canControlPlaylist={canControlPlaylist}
@@ -946,7 +954,7 @@ const RoomDetailPageContent = () => {
       />
     </div>
   );
-}
+};
 
 export default function RoomDetailPage() {
   return (
