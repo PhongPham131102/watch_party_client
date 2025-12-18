@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
-import { Room } from "../types/room.types";
+import { Room, RoomType } from "../types/room.types";
 import { roomService } from "../services/room.service";
 import { RoomMessage } from "../types/room-message.types";
 import { RoomMember } from "../types/room-member.types";
@@ -37,6 +37,7 @@ interface RoomState {
     playlistItems: RoomPlaylist[];
     settings: IRoomSetting;
   }) => void;
+  setSettings: (settings: IRoomSetting) => void;
   addMessage: (message: RoomMessage) => void;
   loadMoreMessages: () => Promise<void>;
   addMember: (member: RoomMember) => void;
@@ -49,6 +50,7 @@ interface RoomState {
   setPlaylistItems: (items: RoomPlaylist[]) => void;
   setCurrentPlayingItem: (item: RoomPlaylist | null) => void;
   setVideoState: (videoState: VideoChangedEvent | null) => void;
+  setTypeRoom: (type: RoomType) => void;
 }
 
 export const useRoomStore = create<RoomState>((set, get) => ({
@@ -68,7 +70,13 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   videoState: null,
   setVideoState: (videoState) => set({ videoState }),
   setCurrentPlayingItem: (item) => set({ currentPlayingItem: item }),
-
+  setTypeRoom: (type) =>
+    set((state) => ({
+      currentRoom: state.currentRoom
+        ? { ...state.currentRoom, type }
+        : state.currentRoom,
+    })),
+  setSettings: (settings) => set({ settings }),
   setCurrentRoom: (room, isOwner = false) =>
     set({
       currentRoom: room,

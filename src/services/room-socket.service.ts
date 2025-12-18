@@ -196,7 +196,9 @@ class RoomSocketService {
   onUserLeft(callback: (data: UserLeftEvent) => void): void {
     this.socket?.on("userLeft", callback);
   }
-
+  onRoomSettingsUpdated(callback: (data: IRoomSetting) => void): void {
+    this.socket?.on("roomSettingsUpdated", callback);
+  }
   async sendMessage(
     roomCode: string,
     content: string
@@ -405,6 +407,13 @@ class RoomSocketService {
   async seekVideo(data: SeekVideoPayload): Promise<void> {
     if (!this.socket?.connected) throw new Error("Socket not connected");
     this.socket.emit("seekVideo", data);
+  }
+  async editRoomSettings(
+    roomCode: string,
+    settings: Partial<IRoomSetting> & { password?: string }
+  ): Promise<void> {
+    if (!this.socket?.connected) throw new Error("Socket not connected");
+    this.socket.emit("updateRoomSettings", { roomCode, ...settings });
   }
   /**
    * Listen for playlist updates from server

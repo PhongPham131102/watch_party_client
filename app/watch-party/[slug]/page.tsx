@@ -87,6 +87,8 @@ const RoomDetailPageContent = () => {
     setPlaylistItems,
     setCurrentPlayingItem,
     setVideoState,
+    setTypeRoom,
+    setSettings,
   } = useRoomStore();
   const playlistRef = useRef<RoomPlaylist[]>([]);
   useEffect(() => {
@@ -221,6 +223,10 @@ const RoomDetailPageContent = () => {
         roomSocketService.onUserLeft((data: UserLeftEvent) => {
           toast.info(`${data.username} đã rời phòng`);
         });
+        roomSocketService.onRoomSettingsUpdated((data) => {
+          setSettings(data);
+          if (data.type) setTypeRoom(data.type);
+        });
 
         // Listen for new messages
         roomSocketService.onNewMessage((data: RoomMessage) => {
@@ -324,6 +330,7 @@ const RoomDetailPageContent = () => {
           playlistItems: response.playlistItems,
           settings: response.settings,
         });
+        if (response.settings.type) setTypeRoom(response.settings.type);
         if (response.currentState) {
           const now = Date.now();
           const latencySeconds = Math.max(
@@ -382,7 +389,7 @@ const RoomDetailPageContent = () => {
       roomSocketService.offVideoChanged();
     };
   }, [
-    room,
+    room?.id,
     isVerified,
     setRoomData,
     addMessage,
@@ -892,7 +899,7 @@ const RoomDetailPageContent = () => {
                           className="text-white/60 hover:text-white hover:bg-white/5 bg-transparent border-transparent  data-[state=active]:shadow-lg rounded-md flex items-center gap-2 transition-all justify-center h-10">
                           <ListVideo size={16} />
                           <span className="hidden sm:inline text-sm font-medium">
-                          D.sách phát
+                            D.sách phát
                           </span>
                         </TabsTrigger>
                       </TooltipTrigger>
@@ -972,7 +979,11 @@ const RoomDetailPageContent = () => {
                   <TabsContent
                     value="settings"
                     className="flex-1 m-0 data-[state=inactive]:hidden">
-                    <SettingsTab settings={settings} isOwner={isOwner} />
+                    <SettingsTab
+                      settings={settings}
+                      isOwner={isOwner}
+                      userRole={userRole}
+                    />
                   </TabsContent>
                 </Tabs>
               </TooltipProvider>
