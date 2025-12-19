@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, SlidersHorizontal } from "lucide-react";
 
 import {
   Select,
@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import MovieCard from "@/src/components/MovieCard";
 import { useMovies } from "@/src/hooks/useMovies";
 
@@ -79,21 +80,31 @@ export default function GenreListingPage() {
   };
 
   const paginationPages = useMemo(() => {
-    const delta = 2;
-    let start = Math.max(1, page - delta);
-    let end = Math.min(totalPages, page + delta);
+    const pages: (number | string)[] = [];
+    const delta = 1;
 
-    if (page <= delta) {
-      end = Math.min(totalPages, end + (delta - page + 1));
-    }
-    if (totalPages - page < delta) {
-      start = Math.max(1, start - (delta - (totalPages - page)));
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (page <= 3) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (page >= totalPages - 2) {
+        pages.push(1);
+        pages.push("...");
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push("...");
+        for (let i = page - delta; i <= page + delta; i++) pages.push(i);
+        pages.push("...");
+        pages.push(totalPages);
+      }
     }
 
-    const pages: number[] = [];
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
     return pages;
   }, [page, totalPages]);
 
@@ -193,32 +204,53 @@ export default function GenreListingPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-10">
-                <button
+              <div className="flex items-center justify-center gap-2 pt-10">
+                {/* Previous Button */}
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() => handlePageChange(page - 1)}
                   disabled={page === 1}
-                  className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/90 transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-white/30">
-                  Trang trước
-                </button>
-                <div className="flex flex-wrap items-center gap-2">
-                  {paginationPages.map((pageNum) => (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`h-10 w-10 rounded-full text-sm font-semibold transition ${page === pageNum
-                          ? "bg-[#1ed760] text-[#04130a]"
-                          : "bg-white/5 text-white/80 hover:bg-white/10"
-                        }`}>
-                      {pageNum}
-                    </button>
+                  className="h-9 w-9 rounded-full border-white/10 hover:text-white bg-transparent text-white/80 transition-all hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {paginationPages.map((pageNum, index) => (
+                    <div key={index}>
+                      {pageNum === "..." ? (
+                        <span className="flex h-9 w-9 items-center justify-center text-white/60">
+                          ...
+                        </span>
+                      ) : (
+                        <Button
+                          variant={page === pageNum ? "default" : "outline"}
+                          size="icon"
+                          onClick={() => handlePageChange(pageNum as number)}
+                          className={`h-9 w-9 rounded-full text-sm font-semibold transition-all ${page === pageNum
+                            ? "bg-primary text-[#04130a] hover:bg-primary/90"
+                            : "border-white/10 bg-white/5 text-white/80 hover:text-white hover:bg-white/10"
+                            }`}
+                        >
+                          {pageNum}
+                        </Button>
+                      )}
+                    </div>
                   ))}
                 </div>
-                <button
+
+                {/* Next Button */}
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() => handlePageChange(page + 1)}
                   disabled={page === totalPages}
-                  className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/90 transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-white/30">
-                  Trang sau
-                </button>
+                  className="h-9 w-9 rounded-full border-white/10 bg-transparent text-white/80 transition-all hover:text-white hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
               </div>
             )}
           </>
