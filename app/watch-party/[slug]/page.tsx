@@ -554,6 +554,8 @@ const RoomDetailPageContent = () => {
 
       if (response.isDuplicate) {
         toast.warning(response.message);
+      } else if (!response?.success) {
+        toast.error(response.message || "Không thể thêm vào playlist");
       } else {
         toast.success(`Đã thêm "${episodeTitle}" vào playlist`);
       }
