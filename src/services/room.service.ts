@@ -3,20 +3,12 @@ import {
   CheckRoomResponse,
   CreateRoomRequest,
   CreateRoomResponse,
+  GetCurrentPublicRoom,
+  GetMessagesResponse,
   VerifyRoomPasswordResponse,
 } from "../types/room.types";
-import { RoomMessage } from "../types/room-message.types";
-import { apiClient } from "./api.service";
 
-export interface GetMessagesResponse {
-  success: boolean;
-  data: RoomMessage[];
-  pagination: {
-    limit: number;
-    hasMore: boolean;
-    lastMessageId: string | null;
-  };
-}
+import { apiClient } from "./api.service";
 
 export class RoomService {
   async createRoom(data: CreateRoomRequest): Promise<CreateRoomResponse> {
@@ -52,7 +44,9 @@ export class RoomService {
       throw error as ApiResponse;
     }
   }
-
+  async getCurrentPublicRoom(): Promise<GetCurrentPublicRoom> {
+    return apiClient.get<GetCurrentPublicRoom>("/rooms/get-public-rooms");
+  }
   async getMessages(
     roomCode: string,
     lastMessageId?: string,

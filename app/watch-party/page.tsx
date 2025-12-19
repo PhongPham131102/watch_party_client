@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -14,25 +15,24 @@ import {
   Share2,
   Check,
   User,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
-import { useAuthStore } from "@/src/store/auth.store";
 import { Input } from "@/components/ui/input";
 import CreateRoomDialog from "@/src/components/CreateRoomDialog";
 import { roomService } from "@/src/services/room.service";
 import { toast } from "@/src/utils/toast";
-
+import { useQuery } from "@tanstack/react-query";
 function WatchPartyContent() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["get-public-rooms"],
+    queryFn: () => roomService.getCurrentPublicRoom(),
+    refetchInterval: 5000,
+  });
   const router = useRouter();
   const [roomCode, setRoomCode] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [joiningRoom, setJoiningRoom] = useState(false);
-  const { user } = useAuthStore();
-  const roomsPerPage = 8;
 
   const features = [
     {
@@ -85,120 +85,13 @@ function WatchPartyContent() {
     },
   ];
 
-  // Mock data for public rooms
-  const publicRooms = [
-    {
-      id: "1",
-      name: "Phòng xem phim Marvel",
-      host: "Nguyễn Văn A",
-      currentMovie: "Spider-Man: No Way Home",
-      thumbnail: "/zootopia-preview.jpg",
-      viewers: 15,
-      isPublic: true,
-      createdAt: "2 giờ trước",
-    },
-    {
-      id: "2",
-      name: "Anime Night 🎌",
-      host: "Trần Thị B",
-      currentMovie: "Your Name",
-      thumbnail: "/zootopia-preview.jpg",
-      viewers: 8,
-      isPublic: true,
-      createdAt: "30 phút trước",
-    },
-    {
-      id: "3",
-      name: "Phim Hành Động Hay",
-      host: "Lê Văn C",
-      currentMovie: "John Wick 4",
-      thumbnail: "/zootopia-preview.jpg",
-      viewers: 23,
-      isPublic: true,
-      createdAt: "1 giờ trước",
-    },
-    {
-      id: "4",
-      name: "Chill với phim Hàn",
-      host: "Phạm Thị D",
-      currentMovie: "Parasite",
-      thumbnail: "/zootopia-preview.jpg",
-      viewers: 12,
-      isPublic: true,
-      createdAt: "45 phút trước",
-    },
-    {
-      id: "5",
-      name: "Horror Movie Marathon",
-      host: "Hoàng Văn E",
-      currentMovie: "The Conjuring",
-      thumbnail: "/zootopia-preview.jpg",
-      viewers: 6,
-      isPublic: true,
-      createdAt: "3 giờ trước",
-    },
-    {
-      id: "6",
-      name: "Comedy Night",
-      host: "Vũ Thị F",
-      currentMovie: "The Hangover",
-      thumbnail: "/zootopia-preview.jpg",
-      viewers: 18,
-      isPublic: true,
-      createdAt: "1 giờ trước",
-    },
-    {
-      id: "7",
-      name: "Sci-Fi Lovers",
-      host: "Đỗ Văn G",
-      currentMovie: "Interstellar",
-      thumbnail: "/zootopia-preview.jpg",
-      viewers: 20,
-      isPublic: true,
-      createdAt: "2 giờ trước",
-    },
-    {
-      id: "8",
-      name: "Romance & Drama",
-      host: "Bùi Thị H",
-      currentMovie: "The Notebook",
-      thumbnail: "/zootopia-preview.jpg",
-      viewers: 10,
-      isPublic: true,
-      createdAt: "4 giờ trước",
-    },
-    {
-      id: "9",
-      name: "Phòng Phim Việt",
-      host: "Đinh Văn I",
-      currentMovie: "Mắt Biếc",
-      thumbnail: "/zootopia-preview.jpg",
-      viewers: 25,
-      isPublic: true,
-      createdAt: "1 giờ trước",
-    },
-  ];
-
-  const totalPages = Math.ceil(publicRooms.length / roomsPerPage);
-  const startIndex = (currentPage - 1) * roomsPerPage;
-  const endIndex = startIndex + roomsPerPage;
-  const currentRooms = publicRooms.slice(startIndex, endIndex);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({
-      top: document.getElementById("public-rooms")?.offsetTop,
-      behavior: "smooth",
-    });
-  };
-
   const handleCreateRoom = () => {
     setIsCreateModalOpen(true);
   };
 
   const handleJoinRoom = async () => {
     const code = roomCode.trim();
-    
+
     if (!code) {
       toast.error("Vui lòng nhập mã phòng");
       return;
@@ -208,7 +101,7 @@ function WatchPartyContent() {
     try {
       // Check if room exists
       const response = await roomService.checkRoom(code);
-      
+
       if (response.data) {
         // Room exists, navigate to room detail page
         router.push(`/watch-party/${code}`);
@@ -257,9 +150,9 @@ function WatchPartyContent() {
               {/* Join Room Input */}
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                  <div className="h-px flex-1 bg-linear-to-r from-transparent via-white/20 to-transparent"></div>
                   <span className="text-white/50 text-sm">hoặc</span>
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                  <div className="h-px flex-1 bg-linear-to-r from-transparent via-white/20 to-transparent"></div>
                 </div>
 
                 <div className="flex gap-2">
@@ -351,7 +244,7 @@ function WatchPartyContent() {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="group relative text-center space-y-4 p-8 rounded-2xl bg-linear-to-br from-white/5 via-white/[0.02] to-transparent backdrop-blur-sm hover:from-red-500/10 hover:via-orange-500/5 hover:to-transparent transition-all duration-500 border border-white/10 hover:border-red-500/30 hover:shadow-2xl hover:shadow-red-500/20 hover:-translate-y-2 cursor-pointer overflow-hidden">
+              className="group relative text-center space-y-4 p-8 rounded-2xl bg-linear-to-br from-white/5 via-white/2 to-transparent backdrop-blur-sm hover:from-red-500/10 hover:via-orange-500/5 hover:to-transparent transition-all duration-500 border border-white/10 hover:border-red-500/30 hover:shadow-2xl hover:shadow-red-500/20 hover:-translate-y-2 cursor-pointer overflow-hidden">
               {/* Animated glow effect */}
               <div className="absolute inset-0 bg-linear-to-br from-red-500/0 via-orange-500/0 to-pink-500/0 group-hover:from-red-500/5 group-hover:via-orange-500/5 group-hover:to-pink-500/5 transition-all duration-500 rounded-2xl blur-xl"></div>
 
@@ -459,9 +352,36 @@ function WatchPartyContent() {
           </div>
 
           {/* Rooms List */}
-          {currentRooms.length > 0 ? (
+          {isLoading ? (
+            <>
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((loader) => (
+                  <div
+                    key={loader}
+                    className="animate-pulse bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 hover:border-white/20 transition-colors duration-200">
+                    <div className="flex items-center justify-between gap-4 p-4 h-16">
+                      {/* Room Name */}
+                      <div className="flex-1 min-w-0 h-6 bg-white/10 rounded"></div>
+                      {/* Host */}
+                      <div className="flex items-center gap-2 text-white/60 text-sm min-w-[150px]">
+                        <div className="w-4 h-4 bg-white/10 rounded-full"></div>
+                        <div className="h-6 bg-white/10 rounded w-20"></div>
+                      </div>
+                      {/* Viewers */}
+                      <div className="flex items-center gap-2 text-white/60 text-sm min-w-20">
+                        <div className="w-4 h-4 bg-white/10 rounded-full"></div>
+                        <div className="h-6 bg-white/10 rounded w-8"></div>
+                      </div>
+                      {/* Join Button */}
+                      <div className="h-10 bg-white/10 rounded w-24"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : data && data.data.length > 0 ? (
             <div className="space-y-3">
-              {currentRooms.map((room) => (
+              {data.data.map((room) => (
                 <div
                   key={room.id}
                   className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 hover:border-white/20 transition-colors duration-200">
@@ -476,13 +396,17 @@ function WatchPartyContent() {
                     {/* Host */}
                     <div className="flex items-center gap-2 text-white/60 text-sm min-w-[150px]">
                       <User className="w-4 h-4 shrink-0" />
-                      <span className="line-clamp-1">{room.host}</span>
+                      <span className="line-clamp-1">
+                        {room.owner?.profile?.fullName || "Người dùng ẩn danh"}
+                      </span>
                     </div>
 
                     {/* Viewers */}
                     <div className="flex items-center gap-2 text-white/60 text-sm min-w-20">
                       <Users className="w-4 h-4 shrink-0" />
-                      <span className="font-medium">{room.viewers}</span>
+                      <span className="font-medium">
+                        {room.currentViewers || 2}
+                      </span>
                     </div>
 
                     {/* Join Button */}
@@ -490,7 +414,7 @@ function WatchPartyContent() {
                       size="sm"
                       className="bg-primary hover:bg-primary/90 text-white"
                       onClick={() =>
-                        router.push(`/watch-party/room/${room.id}`)
+                        router.push(`/watch-party/${room.code}`)
                       }>
                       Tham gia
                     </Button>
@@ -522,46 +446,6 @@ function WatchPartyContent() {
                 className="bg-primary hover:bg-primary/90 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Tạo Phòng Đầu Tiên
-              </Button>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-8">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="bg-white/5 border-white/10 hover:bg-white/10 hover:border-red-500/30 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300">
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="icon"
-                    onClick={() => handlePageChange(page)}
-                    className={`${
-                      currentPage === page
-                        ? "bg-primary text-white border-0"
-                        : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-red-500/30 text-white"
-                    } transition-all duration-300`}>
-                    {page}
-                  </Button>
-                )
-              )}
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="bg-white/5 border-white/10 hover:bg-white/10 hover:border-red-500/30 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300">
-                <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
           )}
