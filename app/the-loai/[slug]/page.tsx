@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, SlidersHorizontal } from "lucide-react";
 
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MovieCard from "@/src/components/MovieCard";
-import { useMovieStore } from "@/src/store/movieStore";
+import { useMovies } from "@/src/hooks/useMovies";
 
 const PAGE_LIMIT = 21;
 
@@ -31,10 +31,10 @@ const CONTENT_TYPE_FILTERS: {
   label: string;
   value: "movie" | "series" | typeof ALL_CONTENT_TYPE;
 }[] = [
-  { label: "Tất cả", value: ALL_CONTENT_TYPE },
-  { label: "Phim lẻ", value: "movie" },
-  { label: "Phim bộ", value: "series" },
-];
+    { label: "Tất cả", value: ALL_CONTENT_TYPE },
+    { label: "Phim lẻ", value: "movie" },
+    { label: "Phim bộ", value: "series" },
+  ];
 
 const GENRE_LABELS: Record<string, string> = {
   "hanh-dong": "Hành Động",
@@ -56,78 +56,38 @@ export default function GenreListingPage() {
       .join(" ");
   }, [slug]);
 
-  const { movies, pagination, isLoading, error, fetchMovies, filters } =
-    useMovieStore();
-
-  const filtersRef = useRef(filters);
-  const [selectedCountry, setSelectedCountry] = useState<string>(
-    filters.countrySlugs?.[0] ?? ALL_COUNTRY
-  );
+  const [page, setPage] = useState(1);
+  const [selectedCountry, setSelectedCountry] = useState<string>(ALL_COUNTRY);
   const [selectedContentType, setSelectedContentType] = useState<
     "movie" | "series" | typeof ALL_CONTENT_TYPE
-  >(filters.contentType ?? ALL_CONTENT_TYPE);
+  >(ALL_CONTENT_TYPE);
 
-  useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
+  const { movies, total, isLoading, error } = useMovies({
+    page,
+    limit: PAGE_LIMIT,
+    genreSlugs: slug ? [slug] : undefined,
+    countrySlugs: selectedCountry !== ALL_COUNTRY ? [selectedCountry] : undefined,
+    contentType: selectedContentType !== ALL_CONTENT_TYPE ? selectedContentType : undefined,
+  });
 
-  useEffect(() => {
-    const fetch = async () => {
-      if (!slug) return;
+  const totalPages = Math.ceil(total / PAGE_LIMIT);
 
-      const baseFilters = {
-        ...filtersRef.current,
-        page: 1,
-        limit: PAGE_LIMIT,
-        genreSlugs: [slug],
-        countrySlugs:
-          selectedCountry !== ALL_COUNTRY ? [selectedCountry] : undefined,
-        contentType:
-          selectedContentType !== ALL_CONTENT_TYPE
-            ? selectedContentType
-            : undefined,
-      };
-
-      await fetchMovies(baseFilters);
-    };
-
-    void fetch();
-  }, [slug, selectedCountry, selectedContentType, fetchMovies]);
-
-  const handlePageChange = (page: number) => {
-    if (!pagination || !slug) return;
-    if (page < 1 || page > pagination.totalPages) return;
-    if (page === pagination.page) return;
-
-    const baseFilters = {
-      ...filtersRef.current,
-      genreSlugs: [slug],
-      page,
-      limit: PAGE_LIMIT,
-      countrySlugs:
-        selectedCountry !== ALL_COUNTRY ? [selectedCountry] : undefined,
-      contentType:
-        selectedContentType !== ALL_CONTENT_TYPE
-          ? selectedContentType
-          : undefined,
-    };
-
-    void fetchMovies(baseFilters);
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const paginationPages = useMemo(() => {
-    if (!pagination) return [];
-    const total = pagination.totalPages;
-    const current = pagination.page;
     const delta = 2;
-    let start = Math.max(1, current - delta);
-    let end = Math.min(total, current + delta);
+    let start = Math.max(1, page - delta);
+    let end = Math.min(totalPages, page + delta);
 
-    if (current <= delta) {
-      end = Math.min(total, end + (delta - current + 1));
+    if (page <= delta) {
+      end = Math.min(totalPages, end + (delta - page + 1));
     }
-    if (total - current < delta) {
-      start = Math.max(1, start - (delta - (total - current)));
+    if (totalPages - page < delta) {
+      start = Math.max(1, start - (delta - (totalPages - page)));
     }
 
     const pages: number[] = [];
@@ -135,7 +95,7 @@ export default function GenreListingPage() {
       pages.push(i);
     }
     return pages;
-  }, [pagination]);
+  }, [page, totalPages]);
 
   if (!slug) {
     return (
@@ -152,13 +112,9 @@ export default function GenreListingPage() {
           <h1 className="text-3xl font-semibold md:text-4xl">
             {readableGenre}
           </h1>
-          {pagination?.total ? (
+          {total > 0 && (
             <p className="text-sm text-white/60">
-              Có {pagination.total} phim trong thể loại này.
-            </p>
-          ) : (
-            <p className="text-sm text-white/60">
-              Đang hiển thị kết quả cho thể loại này.
+              Có {total} phim trong thể loại này.
             </p>
           )}
         </div>
@@ -175,7 +131,10 @@ export default function GenreListingPage() {
               </p>
               <Select
                 value={selectedCountry}
-                onValueChange={(value) => setSelectedCountry(value)}>
+                onValueChange={(value) => {
+                  setSelectedCountry(value);
+                  setPage(1);
+                }}>
                 <SelectTrigger className="h-11 rounded-lg border-white/10 bg-black/50">
                   <SelectValue placeholder="Tất cả quốc gia" />
                 </SelectTrigger>
@@ -195,11 +154,12 @@ export default function GenreListingPage() {
               </p>
               <Select
                 value={selectedContentType}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
                   setSelectedContentType(
                     value as "movie" | "series" | typeof ALL_CONTENT_TYPE
-                  )
-                }>
+                  );
+                  setPage(1);
+                }}>
                 <SelectTrigger className="h-11 rounded-lg border-white/10 bg-black/50">
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
@@ -232,31 +192,30 @@ export default function GenreListingPage() {
               ))}
             </div>
 
-            {pagination && pagination.totalPages > 1 && (
+            {totalPages > 1 && (
               <div className="flex flex-wrap items-center justify-center gap-3 pt-10">
                 <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page === 1}
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 1}
                   className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/90 transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-white/30">
                   Trang trước
                 </button>
                 <div className="flex flex-wrap items-center gap-2">
-                  {paginationPages.map((page) => (
+                  {paginationPages.map((pageNum) => (
                     <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`h-10 w-10 rounded-full text-sm font-semibold transition ${
-                        pagination.page === page
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`h-10 w-10 rounded-full text-sm font-semibold transition ${page === pageNum
                           ? "bg-[#1ed760] text-[#04130a]"
                           : "bg-white/5 text-white/80 hover:bg-white/10"
-                      }`}>
-                      {page}
+                        }`}>
+                      {pageNum}
                     </button>
                   ))}
                 </div>
                 <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page === pagination.totalPages}
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page === totalPages}
                   className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/90 transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-white/30">
                   Trang sau
                 </button>

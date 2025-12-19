@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { movieService } from "@/src/services/movie.service";
-import type { Movie } from "@/src/types/movie.types";
-import type { FindMoviesQueryDto } from "@/src/types/api.types";
+import type { Movie, FindMoviesQueryDto } from "@/src/types/movie.types";
 
 interface UseMoviesByGenreResult {
   movies: Movie[];
@@ -13,50 +12,26 @@ export function useMoviesByGenre(
   genreSlug: string,
   options?: Partial<FindMoviesQueryDto>
 ): UseMoviesByGenreResult {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["movies", "genre", genreSlug, options],
+    queryFn: async () => {
+      return await movieService.getPublicMovies({
+        genreSlugs: [genreSlug],
+        limit: 20,
+        sortBy: "createdAt",
+        sortOrder: "DESC",
+        ...options,
+      });
+    },
+    enabled: !!genreSlug,
+  });
 
-  useEffect(() => {
-    if (!genreSlug) {
-      setMovies([]);
-      setIsLoading(false);
-      setError(null);
-      return;
-    }
+  const response = query.data;
 
-    const fetchMovies = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await movieService.getPublicMovies({
-          genreSlugs: [genreSlug],
-          limit: 20,
-          sortBy: "createdAt",
-          sortOrder: "DESC",
-          ...options,
-        });
-
-        if (response.success && response.data) {
-          setMovies(response.data.data);
-        } else {
-          setError(response.message || "Failed to fetch movies");
-        }
-      } catch (err: any) {
-        setError(
-          err?.response?.data?.message ||
-          err?.message ||
-          "An error occurred while fetching movies"
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMovies();
-  }, [genreSlug, JSON.stringify(options)]);
-
-  return { movies, isLoading, error };
+  return {
+    movies: response?.success && response.data ? response.data.data : [],
+    isLoading: query.isLoading,
+    error: query.isError ? (query.error as any)?.message || "Failed to fetch movies" : null,
+  };
 }
 

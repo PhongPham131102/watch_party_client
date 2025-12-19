@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Search as SearchIcon, SlidersHorizontal } from "lucide-react";
 
@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MovieCard from "@/src/components/MovieCard";
-import { useMovieStore } from "@/src/store/movieStore";
+import { useMovies } from "@/src/hooks/useMovies";
 
 const PAGE_LIMIT = 21;
 
@@ -41,10 +41,10 @@ const CONTENT_TYPE_FILTERS: {
   label: string;
   value: "movie" | "series" | typeof ALL_CONTENT_TYPE;
 }[] = [
-  { label: "Tất cả", value: ALL_CONTENT_TYPE },
-  { label: "Phim lẻ", value: "movie" },
-  { label: "Phim bộ", value: "series" },
-];
+    { label: "Tất cả", value: ALL_CONTENT_TYPE },
+    { label: "Phim lẻ", value: "movie" },
+    { label: "Phim bộ", value: "series" },
+  ];
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -52,143 +52,37 @@ export default function SearchPage() {
   const queryParam = searchParams.get("q")?.trim() || "";
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const { movies, pagination, isLoading, error, fetchMovies, filters } =
-    useMovieStore();
-
-  const filtersRef = useRef(filters);
-  const [selectedCountry, setSelectedCountry] = useState<string>(
-    filters.countrySlugs?.[0] ?? ALL_COUNTRY
-  );
-  const [selectedGenre, setSelectedGenre] = useState<string>(
-    filters.genreSlugs?.[0] ?? ALL_GENRE
-  );
+  const [page, setPage] = useState(1);
+  const [selectedCountry, setSelectedCountry] = useState<string>(ALL_COUNTRY);
+  const [selectedGenre, setSelectedGenre] = useState<string>(ALL_GENRE);
   const [selectedContentType, setSelectedContentType] = useState<
     "movie" | "series" | typeof ALL_CONTENT_TYPE
-  >(filters.contentType ?? ALL_CONTENT_TYPE);
+  >(ALL_CONTENT_TYPE);
 
-  useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
+  const { movies, total, isLoading, error } = useMovies({
+    page,
+    limit: PAGE_LIMIT,
+    search: queryParam,
+    countrySlugs: selectedCountry !== ALL_COUNTRY ? [selectedCountry] : undefined,
+    genreSlugs: selectedGenre !== ALL_GENRE ? [selectedGenre] : undefined,
+    contentType: selectedContentType !== ALL_CONTENT_TYPE ? selectedContentType : undefined,
+  });
 
-  useEffect(() => {
-    const fetch = async () => {
-      if (!queryParam) return;
-
-      const baseFilters = {
-        ...filtersRef.current,
-        page: 1,
-        limit: PAGE_LIMIT,
-        search: queryParam,
-        countrySlugs:
-          selectedCountry !== ALL_COUNTRY ? [selectedCountry] : undefined,
-        genreSlugs: selectedGenre !== ALL_GENRE ? [selectedGenre] : undefined,
-        contentType:
-          selectedContentType !== ALL_CONTENT_TYPE
-            ? selectedContentType
-            : undefined,
-      };
-
-      await fetchMovies(baseFilters);
-    };
-
-    void fetch();
-  }, [
-    queryParam,
-    fetchMovies,
-    selectedCountry,
-    selectedGenre,
-    selectedContentType,
-  ]);
+  const totalPages = Math.ceil(total / PAGE_LIMIT);
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const value = searchInputRef.current?.value ?? "";
     const trimmed = value.trim();
     if (!trimmed) return;
+    setPage(1);
     router.push(`/search?q=${encodeURIComponent(trimmed)}`);
   };
 
-  const handlePageChange = (page: number) => {
-    if (!pagination) return;
-    if (page < 1 || page > pagination.totalPages) return;
-    if (page === pagination.page) return;
-
-    const baseFilters = {
-      ...filtersRef.current,
-      search: queryParam,
-      page,
-      limit: PAGE_LIMIT,
-      countrySlugs:
-        selectedCountry !== ALL_COUNTRY ? [selectedCountry] : undefined,
-      genreSlugs: selectedGenre !== ALL_GENRE ? [selectedGenre] : undefined,
-      contentType:
-        selectedContentType !== ALL_CONTENT_TYPE
-          ? selectedContentType
-          : undefined,
-    };
-
-    void fetchMovies(baseFilters);
-  };
-
-  const applyFilterChanges = (options: {
-    country?: string | null;
-    genre?: string | null;
-    contentType?: "movie" | "series" | null;
-  }) => {
-    const nextCountry =
-      options.country !== undefined ? options.country : selectedCountry;
-    const nextGenre =
-      options.genre !== undefined ? options.genre : selectedGenre;
-    const nextContentType =
-      options.contentType !== undefined
-        ? options.contentType
-        : selectedContentType;
-
-    const baseFilters = {
-      ...filtersRef.current,
-      search: queryParam,
-      page: 1,
-      limit: PAGE_LIMIT,
-      countrySlugs:
-        nextCountry && nextCountry !== ALL_COUNTRY ? [nextCountry] : undefined,
-      genreSlugs:
-        nextGenre && nextGenre !== ALL_GENRE ? [nextGenre] : undefined,
-      contentType:
-        nextContentType && nextContentType !== ALL_CONTENT_TYPE
-          ? nextContentType
-          : undefined,
-    };
-
-    void fetchMovies(baseFilters);
-  };
-
-  const handleCountrySelect = (value: string) => {
-    const normalized = value || ALL_COUNTRY;
-    setSelectedCountry(normalized);
-    applyFilterChanges({
-      country: normalized === ALL_COUNTRY ? null : normalized,
-    });
-  };
-
-  const handleGenreSelect = (value: string) => {
-    const normalized = value || ALL_GENRE;
-    setSelectedGenre(normalized);
-    applyFilterChanges({
-      genre: normalized === ALL_GENRE ? null : normalized,
-    });
-  };
-
-  const handleContentTypeSelect = (
-    value: "movie" | "series" | typeof ALL_CONTENT_TYPE
-  ) => {
-    const normalized = value || ALL_CONTENT_TYPE;
-    setSelectedContentType(normalized);
-    applyFilterChanges({
-      contentType:
-        normalized === ALL_CONTENT_TYPE
-          ? null
-          : (normalized as "movie" | "series"),
-    });
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const resultSummary = useMemo(() => {
@@ -196,25 +90,19 @@ export default function SearchPage() {
     if (isLoading) return `Đang tìm kiếm “${queryParam}”...`;
     if (error) return `Không thể tìm “${queryParam}”`;
     if (!movies.length) return `Không tìm thấy kết quả cho “${queryParam}”`;
-    if (pagination) {
-      return `Tìm thấy ${pagination.total} kết quả cho “${queryParam}”`;
-    }
-    return "";
-  }, [queryParam, isLoading, error, movies.length, pagination]);
+    return `Tìm thấy ${total} kết quả cho “${queryParam}”`;
+  }, [queryParam, isLoading, error, movies.length, total]);
 
   const paginationPages = useMemo(() => {
-    if (!pagination) return [];
-    const total = pagination.totalPages;
-    const current = pagination.page;
     const delta = 2;
-    let start = Math.max(1, current - delta);
-    let end = Math.min(total, current + delta);
+    let start = Math.max(1, page - delta);
+    let end = Math.min(totalPages, page + delta);
 
-    if (current <= delta) {
-      end = Math.min(total, end + (delta - current + 1));
+    if (page <= delta) {
+      end = Math.min(totalPages, end + (delta - page + 1));
     }
-    if (total - current < delta) {
-      start = Math.max(1, start - (delta - (total - current)));
+    if (totalPages - page < delta) {
+      start = Math.max(1, start - (delta - (totalPages - page)));
     }
 
     const pages: number[] = [];
@@ -222,7 +110,7 @@ export default function SearchPage() {
       pages.push(i);
     }
     return pages;
-  }, [pagination]);
+  }, [page, totalPages]);
 
   return (
     <div className="min-h-screen bg-[#040510] px-6 py-12 text-white md:px-12 lg:px-16">
@@ -269,7 +157,10 @@ export default function SearchPage() {
             <div className="flex-1 space-y-2">
               <Select
                 value={selectedCountry}
-                onValueChange={(value: string) => handleCountrySelect(value)}>
+                onValueChange={(value: string) => {
+                  setSelectedCountry(value);
+                  setPage(1);
+                }}>
                 <SelectTrigger className="h-11 rounded-lg border-white/10 bg-black/50">
                   <SelectValue placeholder="Tất cả quốc gia" />
                 </SelectTrigger>
@@ -286,7 +177,10 @@ export default function SearchPage() {
             <div className="flex-1 space-y-2">
               <Select
                 value={selectedGenre}
-                onValueChange={(value: string) => handleGenreSelect(value)}>
+                onValueChange={(value: string) => {
+                  setSelectedGenre(value);
+                  setPage(1);
+                }}>
                 <SelectTrigger className="h-11 rounded-lg border-white/10 bg-black/50">
                   <SelectValue placeholder="Tất cả thể loại" />
                 </SelectTrigger>
@@ -303,11 +197,12 @@ export default function SearchPage() {
             <div className="flex-1 space-y-2">
               <Select
                 value={selectedContentType}
-                onValueChange={(value: string) =>
-                  handleContentTypeSelect(
+                onValueChange={(value: string) => {
+                  setSelectedContentType(
                     value as "movie" | "series" | typeof ALL_CONTENT_TYPE
-                  )
-                }>
+                  );
+                  setPage(1);
+                }}>
                 <SelectTrigger className="h-11 rounded-lg border-white/10 bg-black/50">
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
@@ -347,31 +242,30 @@ export default function SearchPage() {
               ))}
             </div>
 
-            {pagination && pagination.totalPages > 1 && (
+            {totalPages > 1 && (
               <div className="flex flex-wrap items-center justify-center gap-3 pt-10">
                 <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page === 1}
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 1}
                   className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/90 transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-white/30">
                   Trang trước
                 </button>
                 <div className="flex flex-wrap items-center gap-2">
-                  {paginationPages.map((page) => (
+                  {paginationPages.map((pageNum) => (
                     <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`h-10 w-10 rounded-full text-sm font-semibold transition ${
-                        pagination.page === page
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`h-10 w-10 rounded-full text-sm font-semibold transition ${page === pageNum
                           ? "bg-[#1ed760] text-[#04130a]"
                           : "bg-white/5 text-white/80 hover:bg-white/10"
-                      }`}>
-                      {page}
+                        }`}>
+                      {pageNum}
                     </button>
                   ))}
                 </div>
                 <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page === pagination.totalPages}
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page === totalPages}
                   className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/90 transition disabled:cursor-not-allowed disabled:opacity-40 hover:border-white/30">
                   Trang sau
                 </button>

@@ -1,21 +1,15 @@
 "use client";
-import { useEffect } from "react";
 import HeroSection from "@/src/components/HeroSection";
 import MovieSwiper from "@/src/components/MovieSwiper";
 import TrendingMovies from "@/src/components/TrendingMovies";
-import { useMovieStore } from "@/src/store/movieStore";
+import { useMovies } from "@/src/hooks/useMovies";
 
 export default function Home() {
-  const { movies, fetchMovies } = useMovieStore();
-
-  useEffect(() => {
-    fetchMovies();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { movies, isLoading } = useMovies({ limit: 5 });
 
   return (
     <div className="min-h-screen bg-[#0e0f14]">
-      <HeroSection movies={movies.slice(0, 5)} />
+      {!isLoading && <HeroSection movies={movies} />}
       <TrendingMovies />
       <section className="space-y-10 py-8">
         <MovieSwiper
