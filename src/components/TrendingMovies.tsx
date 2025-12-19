@@ -42,9 +42,8 @@ function TrendingCard({ movie, rank }: { movie: Movie; rank: number }) {
             src={movie.posterUrl}
             alt={movie.title}
             fill
-            className={`object-cover transition-transform duration-300 ${
-              isHovered ? "scale-105" : "scale-100"
-            }`}
+            className={`object-cover transition-transform duration-300 ${isHovered ? "scale-105" : "scale-100"
+              }`}
             sizes="(max-width: 768px) 200px, (max-width: 1024px) 220px, 240px"
           />
         ) : (
@@ -76,16 +75,23 @@ function TrendingCard({ movie, rank }: { movie: Movie; rank: number }) {
   );
 }
 
+import TrendingCardSkeleton from "./MovieCardSkeleton"; // Fallback to MovieCardSkeleton
+import MovieSwiperSkeleton from "./MovieSwiperSkeleton";
+
 export default function TrendingMovies({
   title = "Top Phim Thịnh Hành",
   genreSlug = "hanh-dong",
   limit = 10,
 }: TrendingMoviesProps) {
-  const { movies } = useMoviesByGenre(genreSlug, {
+  const { movies, isLoading } = useMoviesByGenre(genreSlug, {
     limit,
     sortBy: "totalViews",
     sortOrder: "DESC",
   });
+
+  if (isLoading) {
+    return <MovieSwiperSkeleton />;
+  }
 
   if (movies.length === 0) {
     return null;

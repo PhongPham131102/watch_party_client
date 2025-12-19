@@ -1,5 +1,6 @@
 "use client";
 import HeroSection from "@/src/components/HeroSection";
+import HeroSkeleton from "@/src/components/HeroSkeleton";
 import MovieSwiper from "@/src/components/MovieSwiper";
 import TrendingMovies from "@/src/components/TrendingMovies";
 import { useMovies } from "@/src/hooks/useMovies";
@@ -9,7 +10,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0e0f14]">
-      {!isLoading && <HeroSection movies={movies} />}
+      {isLoading ? <HeroSkeleton /> : <HeroSection movies={movies} />}
       <TrendingMovies />
       <section className="space-y-10 py-8">
         <MovieSwiper

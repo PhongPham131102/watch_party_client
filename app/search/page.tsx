@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MovieCard from "@/src/components/MovieCard";
+import MovieCardSkeleton from "@/src/components/MovieCardSkeleton";
 import { useMovies } from "@/src/hooks/useMovies";
 import { Button } from "@/components/ui/button";
 
@@ -237,9 +238,10 @@ export default function SearchPage() {
             </p>
           </div>
         ) : isLoading ? (
-          <div className="flex items-center justify-center py-20 text-white/70">
-            <Loader2 className="mr-3 h-6 w-6 animate-spin" />
-            Đang tải kết quả...
+          <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <MovieCardSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-6 text-red-200">
@@ -247,7 +249,7 @@ export default function SearchPage() {
           </div>
         ) : movies.length ? (
           <>
-            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-7">
+            <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
               {movies.map((movie) => (
                 <MovieCard key={movie.id} movie={movie} />
               ))}
