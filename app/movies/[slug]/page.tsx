@@ -241,9 +241,8 @@ export default function MovieDetailView() {
       {isPlaying && (
         <section className="px-6 py-16 md:px-12 lg:px-16">
           <div
-            className={`grid gap-8 ${
-              showEpisodeList ? "lg:grid-cols-[2fr,1fr]" : ""
-            }`}>
+            className={`grid gap-8 ${showEpisodeList ? "lg:grid-cols-[2fr,1fr]" : ""
+              }`}>
             <div className="space-y-6">
               <div className="">
                 {hasStream ? (
@@ -276,7 +275,7 @@ export default function MovieDetailView() {
                     {movie.title}
                   </h2>
                   <div className="flex flex-wrap items-center gap-4 text-sm text-white/80">
-                    <span className="flex items-center gap-1 text-[#1ed760]">
+                    <span className="flex items-center gap-1 text-primary">
                       <Star size={18} fill="currentColor" />
                       {ratingValue ?? "?"}
                     </span>
@@ -353,11 +352,10 @@ export default function MovieDetailView() {
                       <button
                         key={episode.id}
                         onClick={() => handleSelectEpisode(episode.id)}
-                        className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
-                          isCurrent
-                            ? "border-[#1ed760] bg-[#1ed760]/10 text-white"
+                        className={`w-full rounded-2xl border px-4 py-3 text-left transition ${isCurrent
+                            ? "border-primary bg-primary/10 text-white"
                             : "border-white/10 bg-white/5 text-white/80 hover:border-white/40"
-                        }`}>
+                          }`}>
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-semibold">
@@ -384,7 +382,7 @@ export default function MovieDetailView() {
       <section className="space-y-6 px-6 py-12 md:px-12 lg:px-16">
         <div>
           <h2 className="text-2xl font-semibold">Đề xuất cho bạn</h2>
-          <div className="mt-2 h-1 w-24 rounded-full bg-[#1ed760]" />
+          <div className="mt-2 h-1 w-24 rounded-full bg-primary" />
         </div>
 
         {isRecommendationsLoading ? (

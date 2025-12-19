@@ -148,7 +148,7 @@ export default function SearchPage() {
             </div>
             <button
               type="submit"
-              className="rounded-md bg-[#1ed760] px-6 py-3 text-sm font-semibold text-[#06210f] transition hover:bg-[#20f072]">
+              className="rounded-md bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">
               Tìm kiếm
             </button>
           </form>
