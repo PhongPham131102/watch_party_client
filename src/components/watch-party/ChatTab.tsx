@@ -146,7 +146,7 @@ export function ChatTab({
           <Input
             ref={chatInputRef}
             type="text"
-            placeholder="Type a message..."
+            placeholder="Soạn tin nhắn..."
             value={chatMessage}
             onChange={(e) => onChatMessageChange(e.target.value)}
             onKeyDown={onKeyPress}

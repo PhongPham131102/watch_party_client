@@ -387,6 +387,8 @@ const RoomDetailPageContent = () => {
       roomSocketService.offForceDisconnect();
       roomSocketService.offPlaylistUpdated();
       roomSocketService.offVideoChanged();
+      // Ngắt kết nối socket để cleanup hoàn toàn
+      roomSocketService.disconnect();
     };
   }, [
     room?.id,
@@ -399,6 +401,26 @@ const RoomDetailPageContent = () => {
     currentUser,
     router,
   ]);
+
+  // Xử lý khi người dùng đóng trình duyệt, refresh tab hoặc thoát trình duyệt
+  useEffect(() => {
+    const handleUnload = () => {
+      if (room?.code && isVerified) {
+        roomSocketService.leaveRoom(room.code);
+        roomSocketService.disconnect();
+      }
+    };
+
+    // 'beforeunload' cho trình duyệt desktop
+    window.addEventListener("beforeunload", handleUnload);
+    // 'pagehide' tốt hơn cho trình duyệt mobile và các case khác
+    window.addEventListener("pagehide", handleUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      window.removeEventListener("pagehide", handleUnload);
+    };
+  }, [room?.code, isVerified]);
 
   // Auto scroll to bottom when new messages arrive or switch to chat tab
   useEffect(() => {

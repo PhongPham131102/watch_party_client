@@ -49,9 +49,8 @@ export function SortablePlaylistItem({
   return (
     <div ref={setNodeRef} style={style} className="w-full px-2 my-2">
       <div
-        className={`grid grid-cols-[20px_112px_1fr_40px] gap-2 py-2 bg-gray-800/50 hover:bg-gray-800/70 rounded-md group items-center ${
-          isDragging ? "shadow-lg shadow-primary/20 ring-2 ring-primary/50" : ""
-        }`}>
+        className={`grid grid-cols-[20px_112px_1fr_40px] gap-2 py-2 bg-gray-800/50 hover:bg-gray-800/70 rounded-md group items-center ${isDragging ? "shadow-lg shadow-primary/20 ring-2 ring-primary/50" : ""
+          }`}>
         {canDrag ? (
           <div
             {...attributes}
@@ -78,9 +77,8 @@ export function SortablePlaylistItem({
                   className="w-full h-full object-cover"
                 />
                 <div
-                  className={`${
-                    isPlaying && "hidden"
-                  } absolute inset-0 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100
+                  className={`${isPlaying && "hidden"
+                    } absolute inset-0 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100
                   `}>
                   <Play size={24} className={"text-white"} />
                 </div>
