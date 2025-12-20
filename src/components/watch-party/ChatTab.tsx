@@ -2,7 +2,7 @@ import { RefObject } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send } from "lucide-react";
 import { RoomMessage, TypeMessage } from "@/src/types/room-message.types";
 
@@ -69,7 +69,7 @@ export function ChatTab({
                 typeof message.user === "object" && message.user
                   ? message.user
                   : null;
-              const username = messageUser?.username || "Unknown";
+              const displayName = messageUser?.profile?.fullName || messageUser?.username || "Unknown";
               const userId = messageUser?.id;
               const messageTime = new Date(message.sentAt).toLocaleTimeString(
                 "vi-VN",
@@ -118,14 +118,15 @@ export function ChatTab({
               return (
                 <div key={message.id} className="flex gap-2">
                   <Avatar className="w-8 h-8 shrink-0">
+                    <AvatarImage src={messageUser?.profile?.avatarUrl || undefined} />
                     <AvatarFallback className="bg-blue-500/20 text-blue-400 text-xs">
-                      {username.substring(0, 2).toUpperCase()}
+                      {displayName.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 max-w-[75%]">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium text-white">
-                        {username}
+                        {displayName}
                       </span>
                       <span className="text-xs text-white/40">
                         {messageTime}
