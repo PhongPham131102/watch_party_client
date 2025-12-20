@@ -11,6 +11,7 @@ export interface Movie {
   durationMinutes: number | null;
   posterUrl: string | null;
   backdropUrl: string | null;
+  titleImageUrl: string | null;
   trailerUrl: string | null;
   averageRating: string; // Backend trả về string
   totalRatings: number;
@@ -38,6 +39,7 @@ export interface MovieLegacy {
   durationMinutes: number | null;
   posterUrl: string | null;
   backdropUrl: string | null;
+  titleImageUrl: string | null;
   trailerUrl: string | null;
   averageRating: number;
   totalRatings: number;

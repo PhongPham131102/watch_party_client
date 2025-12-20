@@ -284,7 +284,7 @@ body {
 
 /* Backdrop Image Styles - theo yêu cầu */
 .hero-backdrop-image,
-.swiper-slide img {
+.swiper-slide img:not(.hero-title-image) {
   position: absolute !important;
   top: 0 !important;
   right: 0 !important;
@@ -298,6 +298,70 @@ body {
   will-change: opacity !important;
   -ms-filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=100) !important;
   filter: alpha(opacity=100) !important;
+}
+
+/* Title Image Styles - không bị absolute */
+.hero-title-image {
+  position: relative !important;
+}
+
+/* Ẩn HOÀN TOÀN TẤT CẢ UI của YouTube - CHỈ CÒN VIDEO */
+.hero-swiper .ytp-spinner,
+.hero-swiper .ytp-spinner-container,
+.hero-swiper .ytp-large-play-button,
+.hero-swiper .ytp-cued-thumbnail-overlay,
+.hero-swiper .ytp-pause-overlay,
+.hero-swiper .ytp-watermark,
+.hero-swiper .ytp-chrome-top,
+.hero-swiper .ytp-chrome-bottom,
+.hero-swiper .ytp-gradient-top,
+.hero-swiper .ytp-gradient-bottom,
+.hero-swiper .ytp-show-cards-title,
+.hero-swiper .ytp-title,
+.hero-swiper .ytp-title-text,
+.hero-swiper .ytp-title-link,
+.hero-swiper .ytp-cards-teaser,
+.hero-swiper .ytp-endscreen-content,
+.hero-swiper .ytp-ce-element,
+.hero-swiper .ytp-player-content,
+.hero-swiper iframe[src*="youtube"] .ytp-spinner,
+.hero-swiper .react-player__preview,
+.hero-swiper .react-player__shadow,
+.hero-swiper .react-player__loading,
+.hero-swiper [class*="loading"],
+.hero-swiper [class*="spinner"],
+.hero-swiper [class*="Loading"],
+.hero-swiper [class*="Spinner"],
+.hero-swiper [class*="ytp"],
+.hero-swiper a[class*="ytp"],
+.hero-swiper div[class*="ytp"],
+.hero-swiper button[class*="ytp"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Style cho iframe - chỉ hiển thị video thuần túy */
+.hero-swiper iframe {
+  background: transparent !important;
+  border: none !important;
+  pointer-events: none !important;
+}
+
+/* Che phủ hoàn toàn các suggested videos và end screen */
+.hero-swiper iframe::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999999;
+  pointer-events: none;
 }
 
 @media (max-width: 768px) {
