@@ -147,6 +147,33 @@ body {
   }
 }
 
+@keyframes tilt-shake {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(10deg);
+  }
+
+  50% {
+    transform: rotate(0deg);
+  }
+
+  75% {
+    transform: rotate(-10deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-tilt-shake {
+  display: inline-block;
+  animation: tilt-shake 0.4s infinite cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
 /* Swiper Custom Styles */
 .hero-swiper {
   position: relative;

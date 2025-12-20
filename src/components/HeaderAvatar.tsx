@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil, ArrowLeftRight, User, HelpCircle } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useAuthStore } from "@/src/store/auth.store";
 import { useRouter } from "next/navigation";
 
@@ -25,42 +25,17 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
 
   const menuItems: MenuItem[] = [
     {
-      id: "kids",
-      label: "Trẻ em",
-      icon: (
-        <div className="w-8 h-8 rounded overflow-hidden bg-[linear-gradient(to_right,#ef4444,#f97316,#eab308,#22c55e,#3b82f6,#a855f7)] flex items-center justify-center shrink-0">
-          <User className="w-5 h-5 text-white" />
-        </div>
-      ),
-    },
-    {
       id: "manage",
       label: "Quản lý hồ sơ",
       icon: <Pencil size={20} />,
       onClick: () => router.push("/profile"),
     },
     {
-      id: "transfer",
-      label: "Chuyển hồ sơ",
-      icon: <ArrowLeftRight size={20} />,
-    },
-    {
-      id: "account",
-      label: "Tài khoản",
-      icon: <User size={20} />,
-      onClick: () => router.push("/profile"),
-    },
-    {
-      id: "help",
-      label: "Trung tâm trợ giúp",
-      icon: <HelpCircle size={20} />,
-      separator: true,
-    },
-    {
       id: "logout",
       label: "Đăng xuất",
       icon: null,
       onClick: logout,
+      separator: true,
     },
   ];
 
@@ -150,9 +125,9 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
                 )}
                 <button
                   onClick={() => handleMenuItemClick(item)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left cursor-pointer transition-colors hover:bg-white/5 ${item.id === "logout"
-                    ? "text-white font-semibold justify-center"
-                    : "text-white/90"
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left cursor-pointer transition-colors ${item.id === "logout"
+                    ? "text-white font-semibold justify-center hover:bg-primary"
+                    : "text-white/90 hover:bg-white/5"
                     }`}>
                   {item.icon && <span className="shrink-0">{item.icon}</span>}
                   <span className="text-sm">{item.label}</span>
