@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Pencil, ArrowLeftRight, User, HelpCircle } from "lucide-react";
 import { useAuthStore } from "@/src/store/auth.store";
+import { useRouter } from "next/navigation";
 
 interface HeaderAvatarProps {
   scrolled: boolean;
@@ -19,6 +20,7 @@ interface MenuItem {
 export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const { isAuthenticated, user, logout, openAuthModal } = useAuthStore();
 
   const menuItems: MenuItem[] = [
@@ -35,6 +37,7 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
       id: "manage",
       label: "Quản lý hồ sơ",
       icon: <Pencil size={20} />,
+      onClick: () => router.push("/profile"),
     },
     {
       id: "transfer",
@@ -45,6 +48,7 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
       id: "account",
       label: "Tài khoản",
       icon: <User size={20} />,
+      onClick: () => router.push("/profile"),
     },
     {
       id: "help",

@@ -62,24 +62,24 @@ export class ApiClient {
     );
   }
 
-  async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
-    return this.axiosInstance.get<T>(endpoint, { params }) as Promise<T>;
+  async get<T>(endpoint: string, params?: Record<string, any>, config?: any): Promise<T> {
+    return this.axiosInstance.get<T>(endpoint, { params, ...config }) as Promise<T>;
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<T> {
-    return this.axiosInstance.post<T>(endpoint, data) as Promise<T>;
+  async post<T>(endpoint: string, data?: any, config?: any): Promise<T> {
+    return this.axiosInstance.post<T>(endpoint, data, config) as Promise<T>;
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<T> {
-    return this.axiosInstance.put<T>(endpoint, data) as Promise<T>;
+  async put<T>(endpoint: string, data?: any, config?: any): Promise<T> {
+    return this.axiosInstance.put<T>(endpoint, data, config) as Promise<T>;
   }
 
-  async delete<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
-    return this.axiosInstance.delete<T>(endpoint, { params }) as Promise<T>;
+  async delete<T>(endpoint: string, params?: Record<string, any>, config?: any): Promise<T> {
+    return this.axiosInstance.delete<T>(endpoint, { params, ...config }) as Promise<T>;
   }
 
-  async patch<T>(endpoint: string, data?: any): Promise<T> {
-    return this.axiosInstance.patch<T>(endpoint, data) as Promise<T>;
+  async patch<T>(endpoint: string, data?: any, config?: any): Promise<T> {
+    return this.axiosInstance.patch<T>(endpoint, data, config) as Promise<T>;
   }
 }
 
