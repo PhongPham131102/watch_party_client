@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { Clock, Play, Share2, Star } from "lucide-react";
+import { Clock, Play, Share2, Star, Heart, Check } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 
 import MovieSwiper from "@/src/components/MovieSwiper";
 import { useMovieDetailStore } from "@/src/store/movieDetailStore";
 import { useMovieRecommendationsStore } from "@/src/store/movieRecommendationsStore";
+import { useFavoriteStore } from "@/src/store/favoriteStore";
+import { useAuthStore } from "@/src/store/auth.store";
 
 const VideoPlayer = dynamic(() => import("@/src/components/VideoPlayer"), {
   ssr: false,
@@ -34,12 +36,21 @@ export default function MovieDetailView() {
     error: recommendationsError,
     fetchRecommendations,
   } = useMovieRecommendationsStore();
+  const { favorites, toggleFavorite, fetchFavorites } = useFavoriteStore();
+  const { isAuthenticated } = useAuthStore();
+
+  const isFavorite = useMemo(() => {
+    return favorites.some((f) => f.id === movie?.id);
+  }, [favorites, movie?.id]);
 
   useEffect(() => {
     if (!slug) return;
     void fetchMovieDetail(slug);
     void fetchRecommendations(slug, 12);
-  }, [slug, fetchMovieDetail, fetchRecommendations]);
+    if (isAuthenticated) {
+      void fetchFavorites();
+    }
+  }, [slug, fetchMovieDetail, fetchRecommendations, isAuthenticated, fetchFavorites]);
 
   const description =
     movie?.description || "Thông tin phim đang được cập nhật.";
@@ -225,6 +236,26 @@ export default function MovieDetailView() {
                   <Share2 size={16} />
                   Chia sẻ
                 </button>
+                {isAuthenticated && (
+                  <button
+                    onClick={() => movie && toggleFavorite(movie)}
+                    className={`cursor-pointer flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition ${isFavorite
+                      ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
+                      : "border-white/10 text-white/80 hover:border-white/40"
+                      }`}>
+                    {isFavorite ? (
+                      <>
+                        <Check size={16} />
+                        Đã trong danh sách
+                      </>
+                    ) : (
+                      <>
+                        <Heart size={16} />
+                        Danh sách của tôi
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -353,8 +384,8 @@ export default function MovieDetailView() {
                         key={episode.id}
                         onClick={() => handleSelectEpisode(episode.id)}
                         className={`w-full rounded-2xl border px-4 py-3 text-left transition ${isCurrent
-                            ? "border-primary bg-primary/10 text-white"
-                            : "border-white/10 bg-white/5 text-white/80 hover:border-white/40"
+                          ? "border-primary bg-primary/10 text-white"
+                          : "border-white/10 bg-white/5 text-white/80 hover:border-white/40"
                           }`}>
                         <div className="flex items-center justify-between">
                           <div>
