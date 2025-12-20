@@ -19,6 +19,9 @@ const navItems = [
 ];
 
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useAuthStore } from "@/src/store/auth.store";
+import { useWatchHistoryStore } from "@/src/store/watchHistoryStore";
 
 interface NavMenuProps {
   scrolled: boolean;
@@ -26,6 +29,14 @@ interface NavMenuProps {
 
 export default function NavMenu({ scrolled }: NavMenuProps) {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuthStore();
+  const { fetchHistory } = useWatchHistoryStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      void fetchHistory(1, 40); // Fetch enough to cover common cards
+    }
+  }, [isAuthenticated, fetchHistory]);
   return (
     <NavigationMenu className="w-full">
       <NavigationMenuList className="gap-1 flex-wrap">

@@ -280,6 +280,8 @@ export default function MovieDetailView() {
                   <VideoPlayer
                     src={streamUrl}
                     videoId={currentEpisode?.id || movie.id}
+                    movieId={movie.id}
+                    episodeId={currentEpisode?.id}
                     className="h-[80vh]"
                   />
                 ) : (
