@@ -58,30 +58,28 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                   alt={movie.title}
                   fill
                   priority={index === 0}
-                  className={`hero-backdrop-image ${
-                    activeIndex === index && !isTransitioning
-                      ? "opacity-100"
-                      : "opacity-0"
-                  }`}
+                  className={`hero-backdrop-image ${activeIndex === index && !isTransitioning
+                    ? "opacity-100"
+                    : "opacity-0"
+                    }`}
                   sizes="100vw"
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-purple-900 via-pink-900 to-blue-900" />
+                <div className="h-full w-full bg-linear-to-br from-[#1a1a2e] via-[#0e0f14] to-[#0a0a0f]" />
               )}
             </div>
 
             {/* Content */}
-            <div className="relative z-[4] flex h-full items-end pb-24 pl-6 md:pl-12 lg:pl-20">
+            <div className="relative z-4 flex h-full items-end pb-24 pl-6 md:pl-12 lg:pl-20">
               <div
-                className={`max-w-2xl space-y-5 transition-all duration-500 ${
-                  activeIndex === index && !isTransitioning
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-8"
-                }`}>
+                className={`max-w-2xl space-y-5 transition-all duration-500 ${activeIndex === index && !isTransitioning
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-8"
+                  }`}>
                 {/* Title */}
                 <div className="space-y-3">
                   {movie.originalTitle && (
-                    <h2 className="text-3xl font-bold text-cyan-400 drop-shadow-2xl md:text-4xl lg:text-5xl xl:text-6xl">
+                    <h2 className="text-3xl font-bold text-primary drop-shadow-2xl md:text-4xl lg:text-5xl xl:text-6xl">
                       {movie.originalTitle}
                     </h2>
                   )}

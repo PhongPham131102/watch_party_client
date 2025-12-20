@@ -174,7 +174,7 @@ export default function MovieDetailView() {
 
               <div className="flex flex-col gap-3 text-sm text-white/70">
                 <div className="flex items-center gap-4 text-base font-medium">
-                  <span className="flex items-center gap-1 text-[#0cb05c]">
+                  <span className="flex items-center gap-1 text-yellow-400">
                     <Star size={18} fill="currentColor" />
                     {ratingValue ?? "?"}
                   </span>
@@ -219,7 +219,7 @@ export default function MovieDetailView() {
                 {isLongDescription && (
                   <button
                     onClick={() => setShowFullDescription((prev) => !prev)}
-                    className="text-sm font-semibold text-[#39c98e]">
+                    className="text-sm font-semibold text-primary">
                     {showFullDescription ? "Thu gọn" : "Hiển thị thêm"}
                   </button>
                 )}
@@ -228,8 +228,8 @@ export default function MovieDetailView() {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handlePlayClick}
-                  className="cursor-pointer flex items-center gap-2 rounded-full bg-[#0cb05c] px-6 py-3 text-sm font-semibold text-[#02100a] transition hover:bg-[#0fd472]">
-                  <Play size={16} />
+                  className="cursor-pointer flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">
+                  <Play size={16} fill="currentColor" />
                   Chiếu phát
                 </button>
                 <button className="cursor-pointer flex items-center gap-2 rounded-full border border-white/10 px-6 py-3 text-sm font-semibold text-white/80 transition hover:border-white/40">
@@ -240,7 +240,7 @@ export default function MovieDetailView() {
                   <button
                     onClick={() => movie && toggleFavorite(movie)}
                     className={`cursor-pointer flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition ${isFavorite
-                      ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
+                      ? "bg-primary border-primary text-white hover:bg-primary/90"
                       : "border-white/10 text-white/80 hover:border-white/40"
                       }`}>
                     {isFavorite ? (
@@ -306,7 +306,7 @@ export default function MovieDetailView() {
                     {movie.title}
                   </h2>
                   <div className="flex flex-wrap items-center gap-4 text-sm text-white/80">
-                    <span className="flex items-center gap-1 text-primary">
+                    <span className="flex items-center gap-1 text-yellow-500">
                       <Star size={18} fill="currentColor" />
                       {ratingValue ?? "?"}
                     </span>
@@ -350,7 +350,7 @@ export default function MovieDetailView() {
                   {isLongDescription && (
                     <button
                       onClick={() => setShowFullDescription((prev) => !prev)}
-                      className="text-sm font-semibold text-[#39c98e]">
+                      className="text-sm font-semibold text-primary">
                       {showFullDescription ? "Thu gọn" : "Hiển thị thêm"}
                     </button>
                   )}
