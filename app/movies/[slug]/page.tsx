@@ -16,6 +16,10 @@ const VideoPlayer = dynamic(() => import("@/src/components/VideoPlayer"), {
   ssr: false,
 });
 
+const MovieComments = dynamic(() => import("@/src/components/MovieComments"), {
+  ssr: false,
+});
+
 export default function MovieDetailView() {
   const params = useParams();
   const slug = params?.slug as string;
@@ -50,7 +54,13 @@ export default function MovieDetailView() {
     if (isAuthenticated) {
       void fetchFavorites();
     }
-  }, [slug, fetchMovieDetail, fetchRecommendations, isAuthenticated, fetchFavorites]);
+  }, [
+    slug,
+    fetchMovieDetail,
+    fetchRecommendations,
+    isAuthenticated,
+    fetchFavorites,
+  ]);
 
   const description =
     movie?.description || "Thông tin phim đang được cập nhật.";
@@ -239,10 +249,11 @@ export default function MovieDetailView() {
                 {isAuthenticated && (
                   <button
                     onClick={() => movie && toggleFavorite(movie)}
-                    className={`cursor-pointer flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition ${isFavorite
-                      ? "bg-primary border-primary text-white hover:bg-primary/90"
-                      : "border-white/10 text-white/80 hover:border-white/40"
-                      }`}>
+                    className={`cursor-pointer flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition ${
+                      isFavorite
+                        ? "bg-primary border-primary text-white hover:bg-primary/90"
+                        : "border-white/10 text-white/80 hover:border-white/40"
+                    }`}>
                     {isFavorite ? (
                       <>
                         <Check size={16} />
@@ -268,12 +279,12 @@ export default function MovieDetailView() {
           </div>
         </div>
       )}
-
       {isPlaying && (
         <section className="px-6 py-16 md:px-12 lg:px-16">
           <div
-            className={`grid gap-8 ${showEpisodeList ? "lg:grid-cols-[2fr,1fr]" : ""
-              }`}>
+            className={`grid gap-8 ${
+              showEpisodeList ? "lg:grid-cols-[2fr,1fr]" : ""
+            }`}>
             <div className="space-y-6">
               <div className="">
                 {hasStream ? (
@@ -322,7 +333,9 @@ export default function MovieDetailView() {
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs text-white/60">
                     {[...countryLabels, ...genreLabels].map((tag) => (
-                      <span key={tag} className="rounded-full bg-white/5 px-3 py-1">
+                      <span
+                        key={tag}
+                        className="rounded-full bg-white/5 px-3 py-1">
                         {tag}
                       </span>
                     ))}
@@ -385,10 +398,11 @@ export default function MovieDetailView() {
                       <button
                         key={episode.id}
                         onClick={() => handleSelectEpisode(episode.id)}
-                        className={`w-full rounded-2xl border px-4 py-3 text-left transition ${isCurrent
-                          ? "border-primary bg-primary/10 text-white"
-                          : "border-white/10 bg-white/5 text-white/80 hover:border-white/40"
-                          }`}>
+                        className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                          isCurrent
+                            ? "border-primary bg-primary/10 text-white"
+                            : "border-white/10 bg-white/5 text-white/80 hover:border-white/40"
+                        }`}>
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-semibold">
@@ -411,7 +425,6 @@ export default function MovieDetailView() {
           </div>
         </section>
       )}
-
       <section className="space-y-6 px-6 py-12 md:px-12 lg:px-16">
         <div>
           <h2 className="text-2xl font-semibold">Đề xuất cho bạn</h2>
@@ -429,6 +442,11 @@ export default function MovieDetailView() {
             Chưa có đề xuất nào phù hợp cho phim này.
           </p>
         )}
+      </section>{" "}
+      <section className="w-full flex justify-center px-6 py-12 md:px-12 lg:px-16">
+        <div className="w-full max-w-4xl mx-auto">
+          <MovieComments movieId={movie.id} />
+        </div>
       </section>
     </div>
   );
