@@ -70,12 +70,26 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
                 <Pressable
                   style={({ pressed }) => [
                     styles.playButton,
-                    pressed && { opacity: 0.9 },
+                    pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
                   ]}
                   onPress={() => router.push(`/movies/${item.movie.slug}`)}
                 >
-                  <Ionicons name="play" size={20} color="black" />
-                  <Text style={styles.playButtonText}>Play</Text>
+                  <Ionicons name="play" size={22} color="black" />
+                  <Text style={styles.playButtonText}>Phát</Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.myListButton,
+                    pressed && { opacity: 0.8 },
+                  ]}
+                  onPress={() => {
+                    // TODO: Implement add to favorites/my list functionality
+                    console.log("Add to My List:", item.movie.id);
+                  }}
+                >
+                  <Ionicons name="add" size={22} color="white" />
+                  <Text style={styles.myListButtonText}>Danh sách</Text>
                 </Pressable>
               </View>
             </View>
@@ -143,14 +157,35 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
     borderRadius: 6,
-    gap: 6,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   playButtonText: {
     color: "black",
     fontWeight: "bold",
+    fontSize: 16,
+  },
+  myListButton: {
+    backgroundColor: "rgba(109, 109, 110, 0.7)",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 6,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.4)",
+  },
+  myListButtonText: {
+    color: "white",
+    fontWeight: "600",
     fontSize: 16,
   },
 });
