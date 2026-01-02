@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import { authService } from "../services/auth.service";
 import { useAuthStore } from "../store/auth.store";
 import { LoginRequest } from "../types/auth.types";
+import { loginSchema } from "../schemas/login.schema";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -25,14 +26,26 @@ export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    username?: string;
+    password?: string;
+  }>({});
 
   const handleLogin = async () => {
-    if (!username || !password) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng nhập đầy đủ thông tin",
+    // Clear previous errors
+    setErrors({});
+
+    // Validate with Zod schema
+    const result = loginSchema.safeParse({ username, password });
+
+    if (!result.success) {
+      const fieldErrors: { username?: string; password?: string } = {};
+      result.error.issues.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as "username" | "password"] = err.message;
+        }
       });
+      setErrors(fieldErrors);
       return;
     }
 
@@ -85,25 +98,39 @@ export default function LoginScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Tên đăng nhập</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.username && styles.inputError]}
               placeholder="Nhập tên đăng nhập"
               placeholderTextColor="#666"
               value={username}
-              onChangeText={setUsername}
+              onChangeText={(text) => {
+                setUsername(text);
+                if (errors.username)
+                  setErrors({ ...errors, username: undefined });
+              }}
               autoCapitalize="none"
             />
+            {errors.username && (
+              <Text style={styles.errorText}>{errors.username}</Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Mật khẩu</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.password && styles.inputError]}
               placeholder="Nhập mật khẩu"
               placeholderTextColor="#666"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (errors.password)
+                  setErrors({ ...errors, password: undefined });
+              }}
               secureTextEntry
             />
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
           </View>
 
           <TouchableOpacity
@@ -172,6 +199,16 @@ const styles = StyleSheet.create({
     padding: 12,
     color: "#fff",
     fontSize: 16,
+  },
+  inputError: {
+    borderColor: "#E50914",
+    borderWidth: 2,
+  },
+  errorText: {
+    color: "#E50914",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   button: {
     backgroundColor: "#E50914", // Netflix Red

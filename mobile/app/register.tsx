@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import { authService } from "../services/auth.service";
 import { useAuthStore } from "../store/auth.store";
 import { RegisterRequest } from "../types/auth.types";
+import { registerSchema } from "../schemas/register.schema";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -27,15 +28,37 @@ export default function RegisterScreen() {
   const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    email?: string;
+    username?: string;
+    fullName?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
 
   const handleRegister = async () => {
-    if (!email || !username || !fullName || !password) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng nhập đầy đủ thông tin",
+    // Clear previous errors
+    setErrors({});
+
+    // Validate with Zod schema
+    const result = registerSchema.safeParse({
+      email,
+      username,
+      fullName,
+      password,
+      confirmPassword,
+    });
+
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {};
+      result.error.issues.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
       });
+      setErrors(fieldErrors);
       return;
     }
 
@@ -89,49 +112,98 @@ export default function RegisterScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.email && styles.inputError]}
                 placeholder="Nhập email"
                 placeholderTextColor="#666"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) setErrors({ ...errors, email: undefined });
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+              {errors.email && (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Tên đăng nhập</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.username && styles.inputError]}
                 placeholder="Nhập tên đăng nhập"
                 placeholderTextColor="#666"
                 value={username}
-                onChangeText={setUsername}
+                onChangeText={(text) => {
+                  setUsername(text);
+                  if (errors.username)
+                    setErrors({ ...errors, username: undefined });
+                }}
                 autoCapitalize="none"
               />
+              {errors.username && (
+                <Text style={styles.errorText}>{errors.username}</Text>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Họ và tên</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.fullName && styles.inputError]}
                 placeholder="Nhập họ tên đầy đủ"
                 placeholderTextColor="#666"
                 value={fullName}
-                onChangeText={setFullName}
+                onChangeText={(text) => {
+                  setFullName(text);
+                  if (errors.fullName)
+                    setErrors({ ...errors, fullName: undefined });
+                }}
               />
+              {errors.fullName && (
+                <Text style={styles.errorText}>{errors.fullName}</Text>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Mật khẩu</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.password && styles.inputError]}
                 placeholder="Nhập mật khẩu"
                 placeholderTextColor="#666"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password)
+                    setErrors({ ...errors, password: undefined });
+                }}
                 secureTextEntry
               />
+              {errors.password && (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Xác nhận mật khẩu</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  errors.confirmPassword && styles.inputError,
+                ]}
+                placeholder="Nhập lại mật khẩu"
+                placeholderTextColor="#666"
+                value={confirmPassword}
+                onChangeText={(text) => {
+                  setConfirmPassword(text);
+                  if (errors.confirmPassword)
+                    setErrors({ ...errors, confirmPassword: undefined });
+                }}
+                secureTextEntry
+              />
+              {errors.confirmPassword && (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              )}
             </View>
 
             <TouchableOpacity
@@ -204,6 +276,16 @@ const styles = StyleSheet.create({
     padding: 12,
     color: "#fff",
     fontSize: 16,
+  },
+  inputError: {
+    borderColor: "#E50914",
+    borderWidth: 2,
+  },
+  errorText: {
+    color: "#E50914",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   button: {
     backgroundColor: "#E50914", // Netflix Red
