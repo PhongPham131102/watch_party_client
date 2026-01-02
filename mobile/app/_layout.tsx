@@ -16,6 +16,9 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+import Toast from "react-native-toast-message";
+import { toastConfig } from "@/components/ui/ToastConfig";
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
@@ -34,7 +37,8 @@ export default function RootLayout() {
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="register" options={{ headerShown: false }} />
           </Stack>
-          <StatusBar style="auto" />
+          <StatusBar style="light" />
+          <Toast config={toastConfig} />
         </ThemeProvider>
       </QueryProvider>
     </GestureHandlerRootView>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Toast from "react-native-toast-message";
 import {
   View,
   Text,
@@ -30,7 +31,11 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email || !username || !fullName || !password) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Vui lòng nhập đầy đủ thông tin",
+      });
       return;
     }
 
@@ -44,15 +49,27 @@ export default function RegisterScreen() {
         await setTokens(response.data.accessToken, response.data.refreshToken);
         setUser(response.data.user);
 
-        Alert.alert("Thành công", "Đăng ký thành công!");
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Đăng ký thành công!",
+        });
         router.replace("/(tabs)");
       } else {
-        Alert.alert("Thất bại", response.message || "Đăng ký thất bại");
+        Toast.show({
+          type: "error",
+          text1: "Thất bại",
+          text2: response.message || "Đăng ký thất bại",
+        });
       }
     } catch (error: any) {
       console.error("Register error:", error);
       const msg = error?.message || "Có lỗi xảy ra khi đăng ký";
-      Alert.alert("Lỗi", msg);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: msg,
+      });
     } finally {
       setLoading(false);
     }
@@ -189,7 +206,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   button: {
-    backgroundColor: "#ef4444", // Red-500
+    backgroundColor: "#E50914", // Netflix Red
     borderRadius: 8,
     padding: 14,
     alignItems: "center",
@@ -212,7 +229,7 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.6)",
   },
   link: {
-    color: "#ef4444",
+    color: "#E50914",
     fontWeight: "bold",
   },
 });
