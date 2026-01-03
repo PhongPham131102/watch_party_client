@@ -166,7 +166,14 @@ export default function ProfileScreen() {
           <View style={styles.avatarContainer}>
             <View style={styles.avatarWrapper}>
               {avatarPreview ? (
-                <Image source={{ uri: avatarPreview }} style={styles.avatar} />
+                <Image
+                  key={avatarPreview} // Force re-mount on URL change
+                  source={{
+                    uri: `${avatarPreview}?t=${Date.now()}`, // Cache busting
+                    cache: "reload",
+                  }}
+                  style={styles.avatar}
+                />
               ) : (
                 <View style={styles.avatarPlaceholder}>
                   <Text style={styles.avatarPlaceholderText}>
