@@ -62,7 +62,7 @@ export default function ForgotPasswordFlow() {
 
   // Countdown timer logic
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setInterval>;
     if (countdown > 0) {
       timer = setInterval(() => {
         setCountdown((prev) => prev - 1);
@@ -83,9 +83,16 @@ export default function ForgotPasswordFlow() {
       toast.success("Đã gửi mã xác nhận", "Vui lòng kiểm tra email của bạn");
     } catch (error: unknown) {
       const err = error as ApiResponse;
-      toast.error(
-        err?.message || "Không thể gửi email xác nhận. Vui lòng thử lại sau."
-      );
+      const errorCode = err?.errorCode as ErrorCode;
+      let msg = "Không thể gửi email xác nhận. Vui lòng thử lại sau.";
+
+      if (errorCode === ErrorCode.VALIDATION_ERROR) {
+        msg = "Email không đúng định dạng";
+      } else if (errorCode === ErrorCode.INTERNAL_SERVER_ERROR) {
+        msg = "Lỗi khi gửi mail hoặc lỗi server";
+      }
+
+      toast.error(msg);
     }
   };
 
@@ -111,13 +118,15 @@ export default function ForgotPasswordFlow() {
     } catch (error: unknown) {
       const err = error as ApiResponse;
       const errorCode = err?.errorCode as ErrorCode;
-      if (errorCode === ErrorCode.BAD_REQUEST) {
-        toast.error("Mã xác nhận không chính xác hoặc đã hết hạn");
-      } else if (errorCode && ErrorCodeMessage[errorCode]) {
-        toast.error(ErrorCodeMessage[errorCode]);
-      } else {
-        toast.error(err?.message || "Mã xác nhận không hợp lệ");
+      let msg = "Mã xác nhận không hợp lệ";
+
+      if (errorCode === ErrorCode.VALIDATION_ERROR) {
+        msg = "Dữ liệu không hợp lệ";
+      } else if (errorCode === ErrorCode.BAD_REQUEST) {
+        msg = "Mã OTP không khớp hoặc đã quá 10 phút";
       }
+
+      toast.error(msg);
     }
   };
 
@@ -134,13 +143,17 @@ export default function ForgotPasswordFlow() {
     } catch (error: unknown) {
       const err = error as ApiResponse;
       const errorCode = err?.errorCode as ErrorCode;
-      if (errorCode === ErrorCode.BAD_REQUEST) {
-        toast.error("Yêu cầu không hợp lệ hoặc mật khẩu không khớp");
-      } else if (errorCode && ErrorCodeMessage[errorCode]) {
-        toast.error(ErrorCodeMessage[errorCode]);
-      } else {
-        toast.error(err?.message || "Đã xảy ra lỗi khi đặt lại mật khẩu");
+      let msg = "Đã xảy ra lỗi khi đặt lại mật khẩu";
+
+      if (errorCode === ErrorCode.VALIDATION_ERROR) {
+        msg = "Dữ liệu không hợp lệ";
+      } else if (errorCode === ErrorCode.BAD_REQUEST) {
+        msg = "Mật khẩu không khớp hoặc mã xác nhận đã hết hạn";
+      } else if (errorCode === ErrorCode.AUTH_ACCOUNT_NOT_FOUND) {
+        msg = "Email không còn tồn tại trong hệ thống";
       }
+
+      toast.error(msg);
     }
   };
 

@@ -104,12 +104,13 @@ export enum ErrorCode {
  */
 export const ErrorCodeMessage: Record<ErrorCode, string> = {
   // General
-  [ErrorCode.INTERNAL_SERVER_ERROR]: "Lỗi hệ thống",
-  [ErrorCode.VALIDATION_ERROR]: "Dữ liệu không hợp lệ",
+  [ErrorCode.INTERNAL_SERVER_ERROR]: "Đã có lỗi xảy ra, vui lòng thử lại sau.",
+  [ErrorCode.VALIDATION_ERROR]:
+    "Dữ liệu không hợp lệ hoặc không đúng định dạng.",
   [ErrorCode.NOT_FOUND]: "Không tìm thấy",
   [ErrorCode.UNAUTHORIZED]: "Chưa đăng nhập",
   [ErrorCode.FORBIDDEN]: "Không có quyền truy cập",
-  [ErrorCode.BAD_REQUEST]: "Yêu cầu không hợp lệ",
+  [ErrorCode.BAD_REQUEST]: "Yêu cầu không hợp lệ.",
 
   // Authentication
   [ErrorCode.AUTH_INVALID_CREDENTIALS]:

@@ -6,6 +6,9 @@ import {
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
+  ForgotPasswordRequest,
+  VerifyResetCodeRequest,
+  ResetPasswordRequest,
 } from "../types/auth.types";
 
 export class AuthService {
@@ -50,6 +53,42 @@ export class AuthService {
     try {
       const response = await apiClient.post<ApiResponse>(
         "/auth/change-password",
+        data
+      );
+      return response;
+    } catch (error) {
+      throw error as ApiResponse;
+    }
+  }
+
+  async forgotPassword(data: ForgotPasswordRequest): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse>(
+        "/auth/forgot-password",
+        data
+      );
+      return response;
+    } catch (error) {
+      throw error as ApiResponse;
+    }
+  }
+
+  async verifyResetCode(data: VerifyResetCodeRequest): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse>(
+        "/auth/verify-reset-code",
+        data
+      );
+      return response;
+    } catch (error) {
+      throw error as ApiResponse;
+    }
+  }
+
+  async resetPassword(data: ResetPasswordRequest): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse>(
+        "/auth/reset-password",
         data
       );
       return response;
