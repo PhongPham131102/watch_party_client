@@ -14,6 +14,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
+import * as ScreenOrientation from "expo-screen-orientation";
 
 import { useRoomStore } from "@/store/room.store";
 import { roomSocketService } from "@/services/room-socket.service";
@@ -66,6 +67,7 @@ export default function RoomDetailScreen() {
   const [password, setPassword] = useState("");
   const [verifyingPassword, setVerifyingPassword] = useState(false);
   const [roomInfo, setRoomInfo] = useState<any>(null);
+  const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
 
   // Get current playing item from playlist items
   const currentPlayingItemObj = useMemo(() => {
@@ -274,6 +276,10 @@ export default function RoomDetailScreen() {
         roomSocketService.leaveRoom(roomCode);
       }
       clearRoom();
+      // Ensure orientation is reset when leaving room
+      ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT_UP
+      );
     };
   }, [roomCode, isAuthenticated, checkRoom, clearRoom, router]);
 
@@ -317,13 +323,19 @@ export default function RoomDetailScreen() {
 
   // Socket Listeners
   useEffect(() => {
-    if (!roomCode) return;
+    if (!roomCode || isConnecting || isChecking) return;
+
+    // Register listeners only if socket is actually connected
+    // This is crucial for the first join
+    console.log("Socket Effect Check:", { roomCode, isConnecting, isChecking });
 
     roomSocketService.onNewMessage((msg) => {
+      console.log("Socket: newMessage received");
       addMessage(msg);
     });
 
     roomSocketService.onMemberAdded((member) => {
+      console.log("Socket: memberAdded received");
       addMember(member);
       const userObj = member.user as any;
       const name =
@@ -336,7 +348,9 @@ export default function RoomDetailScreen() {
     });
 
     roomSocketService.onMemberRemoved((data) => {
-      const member = members.find(
+      console.log("Socket: memberRemoved received");
+      const currentMembers = useRoomStore.getState().members;
+      const member = currentMembers.find(
         (m) =>
           (typeof m.user === "object" ? m.user?.id : m.user) === data.userId
       );
@@ -354,11 +368,13 @@ export default function RoomDetailScreen() {
     });
 
     roomSocketService.onRoomSettingsUpdated((settings) => {
+      console.log("Socket: roomSettingsUpdated received");
       setSettings(settings);
     });
 
     // Listen for playlist updated (Website logic)
     roomSocketService.onPlaylistUpdated((data) => {
+      console.log("Socket: playlistUpdated received", data.action);
       const currentUserId = typeof user === "string" ? user : user?.id;
 
       const isOwnAction =
@@ -384,6 +400,7 @@ export default function RoomDetailScreen() {
 
     // Listen for video changed (Website logic)
     roomSocketService.onVideoChanged((data) => {
+      console.log("Socket: videoChanged received", data.is_playing);
       const currentPlaylist = useRoomStore.getState().playlistItems;
       const newPlayingItem = currentPlaylist.find((item) => {
         const itemId = item.id || (item as any)._id;
@@ -407,6 +424,7 @@ export default function RoomDetailScreen() {
     });
 
     roomSocketService.onUserRoleChanged((data) => {
+      console.log("Socket: userRoleChanged received");
       updateMemberRole(data.userId, data.newRole);
       if (data.userId === (typeof user === "string" ? user : user?.id)) {
         Toast.show({
@@ -418,6 +436,7 @@ export default function RoomDetailScreen() {
     });
 
     roomSocketService.onUserKicked((data) => {
+      console.log("Socket: userKicked received");
       if (data.userId === (typeof user === "string" ? user : user?.id)) {
         Toast.show({
           type: "error",
@@ -430,6 +449,7 @@ export default function RoomDetailScreen() {
 
     // Cleanup listeners
     return () => {
+      console.log("Cleaning up socket listeners...");
       roomSocketService.offNewMessage();
       roomSocketService.offMemberAdded();
       roomSocketService.offMemberRemoved();
@@ -441,6 +461,8 @@ export default function RoomDetailScreen() {
     };
   }, [
     roomCode,
+    isConnecting,
+    isChecking,
     addMessage,
     addMember,
     removeMember,
@@ -538,111 +560,126 @@ export default function RoomDetailScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Video Area (Persistent at top) */}
-      <View style={[styles.videoSection, { paddingTop: insets.top }]}>
-        <View style={styles.header}>
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color="white"
-            onPress={() => router.back()}
-            style={styles.backButton}
-          />
-          <View style={styles.roomInfoContainer}>
-            <Text style={styles.roomTitle} numberOfLines={1}>
-              {currentRoom?.name || roomInfo?.name || `Phòng: ${roomCode}`}
-            </Text>
-            <View style={styles.headerBadges}>
-              <Pressable
-                style={styles.roomCodeBadge}
-                onPress={async () => {
-                  await Clipboard.setStringAsync(roomCode);
-                  Toast.show({
-                    type: "info",
-                    text1: "Đã sao chép",
-                    text2: `Mã phòng ${roomCode} đã được copy`,
-                  });
-                }}
-              >
-                <Text style={styles.roomCodeText}>{roomCode}</Text>
-              </Pressable>
+      <View
+        style={[
+          styles.videoSection,
+          !isPlayerFullscreen && { paddingTop: insets.top },
+          isPlayerFullscreen && styles.videoSectionFullscreen,
+        ]}
+      >
+        {!isPlayerFullscreen && (
+          <View style={styles.header}>
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color="white"
+              onPress={() => router.back()}
+              style={styles.backButton}
+            />
+            <View style={styles.roomInfoContainer}>
+              <Text style={styles.roomTitle} numberOfLines={1}>
+                {currentRoom?.name || roomInfo?.name || `Phòng: ${roomCode}`}
+              </Text>
+              <View style={styles.headerBadges}>
+                <Pressable
+                  style={styles.roomCodeBadge}
+                  onPress={async () => {
+                    await Clipboard.setStringAsync(roomCode);
+                    Toast.show({
+                      type: "info",
+                      text1: "Đã sao chép",
+                      text2: `Mã phòng ${roomCode} đã được copy`,
+                    });
+                  }}
+                >
+                  <Text style={styles.roomCodeText}>{roomCode}</Text>
+                </Pressable>
 
-              <View
-                style={[
-                  styles.typeBadge,
-                  {
-                    backgroundColor:
-                      roomInfo?.type === "public"
-                        ? "rgba(34, 197, 94, 0.2)"
-                        : "rgba(239, 68, 68, 0.2)",
-                  },
-                ]}
-              >
                 <View
                   style={[
-                    styles.statusDot,
+                    styles.typeBadge,
                     {
                       backgroundColor:
-                        roomInfo?.type === "public" ? "#22c55e" : "#ef4444",
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.typeBadgeText,
-                    {
-                      color:
-                        roomInfo?.type === "public" ? "#22c55e" : "#ef4444",
+                        roomInfo?.type === "public"
+                          ? "rgba(34, 197, 94, 0.2)"
+                          : "rgba(239, 68, 68, 0.2)",
                     },
                   ]}
                 >
-                  {roomInfo?.type === "public" ? "Công khai" : "Riêng tư"}
-                </Text>
-              </View>
-
-              {userRole &&
-                (userRole === "owner" || userRole === "moderator") && (
                   <View
                     style={[
-                      styles.roleBadge,
+                      styles.statusDot,
                       {
                         backgroundColor:
-                          userRole === "owner"
-                            ? "rgba(239, 68, 68, 0.2)"
-                            : "rgba(249, 115, 22, 0.2)",
+                          roomInfo?.type === "public" ? "#22c55e" : "#ef4444",
                       },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.typeBadgeText,
                       {
-                        borderColor:
-                          userRole === "owner" ? "#ef4444" : "#f97316",
+                        color:
+                          roomInfo?.type === "public" ? "#22c55e" : "#ef4444",
                       },
                     ]}
                   >
-                    <Text
+                    {roomInfo?.type === "public" ? "Công khai" : "Riêng tư"}
+                  </Text>
+                </View>
+
+                {userRole &&
+                  (userRole === "owner" || userRole === "moderator") && (
+                    <View
                       style={[
-                        styles.roleBadgeText,
-                        { color: userRole === "owner" ? "#ef4444" : "#f97316" },
+                        styles.roleBadge,
+                        {
+                          backgroundColor:
+                            userRole === "owner"
+                              ? "rgba(239, 68, 68, 0.2)"
+                              : "rgba(249, 115, 22, 0.2)",
+                        },
+                        {
+                          borderColor:
+                            userRole === "owner" ? "#ef4444" : "#f97316",
+                        },
                       ]}
                     >
-                      {userRole === "owner" ? "Chủ phòng" : "Quản trị viên"}
-                    </Text>
-                  </View>
-                )}
+                      <Text
+                        style={[
+                          styles.roleBadgeText,
+                          {
+                            color: userRole === "owner" ? "#ef4444" : "#f97316",
+                          },
+                        ]}
+                      >
+                        {userRole === "owner" ? "Chủ phòng" : "Quản trị viên"}
+                      </Text>
+                    </View>
+                  )}
+              </View>
             </View>
+            <Ionicons
+              name="share-outline"
+              size={24}
+              color="white"
+              onPress={() => {
+                Share.share({
+                  message: `Tham gia phòng xem chung với tôi! Mã phòng: ${roomCode}`,
+                  title: "Watch Party",
+                });
+              }}
+              style={styles.shareButton}
+            />
           </View>
-          <Ionicons
-            name="share-outline"
-            size={24}
-            color="white"
-            onPress={() => {
-              Share.share({
-                message: `Tham gia phòng xem chung với tôi! Mã phòng: ${roomCode}`,
-                title: "Watch Party",
-              });
-            }}
-            style={styles.shareButton}
-          />
-        </View>
+        )}
 
-        <View style={styles.videoPlaceholder}>
+        <View
+          style={[
+            styles.videoPlaceholder,
+            isPlayerFullscreen && styles.videoPlaceholderFullscreen,
+          ]}
+        >
           {currentPlayingEpisode ? (
             <VideoRoomPlayer
               episode={currentPlayingEpisode}
@@ -656,6 +693,7 @@ export default function RoomDetailScreen() {
               onSeek={handleSeek}
               onNextEpisode={handleNext}
               onPreviousEpisode={handlePrevious}
+              onFullscreenChange={setIsPlayerFullscreen}
             />
           ) : (
             <View style={styles.noVideoContainer}>
@@ -687,26 +725,28 @@ export default function RoomDetailScreen() {
           </Pressable>
         </View>
       ) : (
-        <>
-          {/* Tabs */}
-          <RoomTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        !isPlayerFullscreen && (
+          <>
+            {/* Tabs */}
+            <RoomTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Tab Content */}
-          <View style={styles.contentArea}>
-            {activeTab === "chat" && <ChatTab />}
-            {activeTab === "playlist" && <PlaylistTab />}
-            {activeTab === "members" && <MembersTab />}
-            {activeTab === "settings" && (
-              <SettingsTab
-                isOwner={
-                  userRole === "owner" ||
-                  currentRoom?.ownerId ===
-                    (typeof user === "string" ? user : user?.id)
-                }
-              />
-            )}
-          </View>
-        </>
+            {/* Tab Content */}
+            <View style={styles.contentArea}>
+              {activeTab === "chat" && <ChatTab />}
+              {activeTab === "playlist" && <PlaylistTab />}
+              {activeTab === "members" && <MembersTab />}
+              {activeTab === "settings" && (
+                <SettingsTab
+                  isOwner={
+                    userRole === "owner" ||
+                    currentRoom?.ownerId ===
+                      (typeof user === "string" ? user : user?.id)
+                  }
+                />
+              )}
+            </View>
+          </>
+        )
       )}
     </View>
   );
@@ -881,6 +921,14 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 16 / 9,
     backgroundColor: "#1f2937",
+  },
+  videoPlaceholderFullscreen: {
+    height: "100%",
+    aspectRatio: undefined,
+  },
+  videoSectionFullscreen: {
+    flex: 1,
+    paddingTop: 0,
   },
   noVideoContainer: {
     flex: 1,

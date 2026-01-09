@@ -43,6 +43,7 @@ interface VideoRoomPlayerProps {
   onSeek: (data: { roomCode: string; currentTime: number }) => void;
   onNextEpisode: (data: { roomCode: string }) => void;
   onPreviousEpisode: (data: { roomCode: string }) => void;
+  onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
 const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
@@ -57,6 +58,7 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
   onSeek,
   onNextEpisode,
   onPreviousEpisode,
+  onFullscreenChange,
 }) => {
   const { playlistItems, currentPlayingItem } = useRoomStore();
   const hasNextRef = useRef(false);
@@ -106,6 +108,27 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
       playThroughEarpieceAndroid: false,
     });
   }, []);
+
+  const resetControlsTimeout = () => {
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+  };
+
+  useEffect(() => {
+    if (isPlaying && showControls) {
+      resetControlsTimeout();
+    } else if (!isPlaying) {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      setShowControls(true);
+    }
+    return () => {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, [isPlaying, showControls]);
 
   // Sync Logic (Mirror Web lines 197-216)
   useEffect(() => {
@@ -207,6 +230,7 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
 
   const togglePlay = async () => {
     if (userRole === RoomMemberRole.MEMBER) return;
+    resetControlsTimeout();
     try {
       const status = await videoRef.current?.getStatusAsync();
       const currentVideoTime = status?.isLoaded
@@ -227,23 +251,27 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
   const handleSeek = (e: any) => {
     if (userRole === RoomMemberRole.MEMBER || !duration || barWidth === 0)
       return;
+    resetControlsTimeout();
     const { locationX } = e.nativeEvent;
     const pos = Math.max(0, Math.min(1, locationX / barWidth));
     onSeek({ currentTime: pos * duration, roomCode: roomCode });
   };
 
   const toggleFullscreen = async () => {
+    resetControlsTimeout();
     if (!isFullscreen) {
       await ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.LANDSCAPE
       );
       setIsFullscreen(true);
+      onFullscreenChange?.(true);
       StatusBar.setHidden(true);
     } else {
       await ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.PORTRAIT_UP
       );
       setIsFullscreen(false);
+      onFullscreenChange?.(false);
       StatusBar.setHidden(false);
     }
   };
@@ -261,15 +289,7 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
     <View style={isFullscreen ? styles.fullscreenContainer : styles.container}>
       <Pressable
         onPress={() => {
-          setShowControls(!showControls);
-          if (controlsTimeoutRef.current)
-            clearTimeout(controlsTimeoutRef.current);
-          if (!showControls && isPlaying) {
-            controlsTimeoutRef.current = setTimeout(
-              () => setShowControls(false),
-              3000
-            );
-          }
+          setShowControls((prev) => !prev);
         }}
         style={styles.videoWrapper}
       >
@@ -294,6 +314,14 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
       {showControls && (
         <View style={styles.overlay}>
           <View style={styles.header}>
+            {isFullscreen && (
+              <TouchableOpacity
+                onPress={toggleFullscreen}
+                style={styles.fullscreenBackButton}
+              >
+                <Ionicons name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
+            )}
             <Text style={styles.title} numberOfLines={1}>
               {episode.title}
             </Text>
@@ -417,8 +445,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "space-between",
   },
-  header: { padding: 16 },
-  title: { color: "white", fontSize: 18, fontWeight: "bold" },
+  header: {
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  fullscreenBackButton: {
+    padding: 4,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 20,
+  },
+  title: { color: "white", fontSize: 18, fontWeight: "bold", flex: 1 },
   centerRow: {
     flexDirection: "row",
     alignItems: "center",
