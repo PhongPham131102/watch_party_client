@@ -12,6 +12,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { authService } from "../services/auth.service";
@@ -88,76 +89,82 @@ export default function LoginScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView
-        style={styles.container}
+        style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Đăng Nhập</Text>
-          <Text style={styles.subtitle}>Chào mừng bạn quay trở lại!</Text>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Đăng Nhập</Text>
+            <Text style={styles.subtitle}>Chào mừng bạn quay trở lại!</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Tên đăng nhập</Text>
-            <TextInput
-              style={[styles.input, errors.username && styles.inputError]}
-              placeholder="Nhập tên đăng nhập"
-              placeholderTextColor="#666"
-              value={username}
-              onChangeText={(text) => {
-                setUsername(text);
-                if (errors.username)
-                  setErrors({ ...errors, username: undefined });
-              }}
-              autoCapitalize="none"
-            />
-            {errors.username && (
-              <Text style={styles.errorText}>{errors.username}</Text>
-            )}
-          </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Tên đăng nhập</Text>
+              <TextInput
+                style={[styles.input, errors.username && styles.inputError]}
+                placeholder="Nhập tên đăng nhập"
+                placeholderTextColor="#666"
+                value={username}
+                onChangeText={(text) => {
+                  setUsername(text);
+                  if (errors.username)
+                    setErrors({ ...errors, username: undefined });
+                }}
+                autoCapitalize="none"
+              />
+              {errors.username && (
+                <Text style={styles.errorText}>{errors.username}</Text>
+              )}
+            </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Mật khẩu</Text>
-            <TextInput
-              style={[styles.input, errors.password && styles.inputError]}
-              placeholder="Nhập mật khẩu"
-              placeholderTextColor="#666"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (errors.password)
-                  setErrors({ ...errors, password: undefined });
-              }}
-              secureTextEntry
-            />
-            {errors.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Mật khẩu</Text>
+              <TextInput
+                style={[styles.input, errors.password && styles.inputError]}
+                placeholder="Nhập mật khẩu"
+                placeholderTextColor="#666"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password)
+                    setErrors({ ...errors, password: undefined });
+                }}
+                secureTextEntry
+              />
+              {errors.password && (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              )}
+              <TouchableOpacity
+                onPress={() => router.push("/forgot-password")}
+                style={styles.forgotPasswordContainer}
+              >
+                <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
-              onPress={() => router.push("/forgot-password")}
-              style={styles.forgotPasswordContainer}
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
             >
-              <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Đăng nhập</Text>
+              )}
             </TouchableOpacity>
-          </View>
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Đăng nhập</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Chưa có tài khoản? </Text>
-            <TouchableOpacity onPress={() => router.push("/register")}>
-              <Text style={styles.link}>Đăng ký ngay</Text>
-            </TouchableOpacity>
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Chưa có tài khoản? </Text>
+              <TouchableOpacity onPress={() => router.push("/register")}>
+                <Text style={styles.link}>Đăng ký ngay</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
   );

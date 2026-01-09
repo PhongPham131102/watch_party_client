@@ -8,6 +8,8 @@ import {
   TextInput,
   Pressable,
   Share,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
@@ -492,64 +494,69 @@ export default function RoomDetailScreen() {
         <StatusBar style="light" backgroundColor="#0e0f14" />
         <Stack.Screen options={{ headerShown: false }} />
 
-        <View
-          style={[styles.passwordContainer, { paddingTop: insets.top + 40 }]}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.container}
         >
-          <View style={styles.passwordCard}>
-            <View style={styles.lockIcon}>
-              <Ionicons name="lock-closed" size={48} color="#ef4444" />
-            </View>
+          <View
+            style={[styles.passwordContainer, { paddingTop: insets.top + 40 }]}
+          >
+            <View style={styles.passwordCard}>
+              <View style={styles.lockIcon}>
+                <Ionicons name="lock-closed" size={48} color="#ef4444" />
+              </View>
 
-            <Text style={styles.passwordTitle}>Phòng riêng tư</Text>
-            <Text style={styles.passwordSubtitle}>
-              Phòng này yêu cầu mật khẩu để truy cập
-            </Text>
+              <Text style={styles.passwordTitle}>Phòng riêng tư</Text>
+              <Text style={styles.passwordSubtitle}>
+                Phòng này yêu cầu mật khẩu để truy cập
+              </Text>
 
-            <View style={styles.passwordInputContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Nhập mật khẩu phòng..."
-                placeholderTextColor="#6b7280"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!verifyingPassword}
-                autoFocus
-              />
-            </View>
+              <View style={styles.passwordInputContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Nhập mật khẩu phòng..."
+                  placeholderTextColor="#6b7280"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  editable={!verifyingPassword}
+                  autoFocus
+                />
+              </View>
 
-            <View style={styles.passwordButtons}>
-              <Pressable
-                style={[styles.passwordButton, styles.cancelButton]}
-                onPress={() => router.back()}
-                disabled={verifyingPassword}
-              >
-                <Text style={styles.cancelButtonText}>Hủy</Text>
-              </Pressable>
+              <View style={styles.passwordButtons}>
+                <Pressable
+                  style={[styles.passwordButton, styles.cancelButton]}
+                  onPress={() => router.back()}
+                  disabled={verifyingPassword}
+                >
+                  <Text style={styles.cancelButtonText}>Hủy</Text>
+                </Pressable>
 
-              <Pressable
-                style={[
-                  styles.passwordButton,
-                  styles.verifyButton,
-                  verifyingPassword && styles.verifyButtonDisabled,
-                ]}
-                onPress={verifyPassword}
-                disabled={verifyingPassword}
-              >
-                {verifyingPassword ? (
-                  <>
-                    <ActivityIndicator size="small" color="#fff" />
-                    <Text style={styles.verifyButtonText}>
-                      Đang xác thực...
-                    </Text>
-                  </>
-                ) : (
-                  <Text style={styles.verifyButtonText}>Xác nhận</Text>
-                )}
-              </Pressable>
+                <Pressable
+                  style={[
+                    styles.passwordButton,
+                    styles.verifyButton,
+                    verifyingPassword && styles.verifyButtonDisabled,
+                  ]}
+                  onPress={verifyPassword}
+                  disabled={verifyingPassword}
+                >
+                  {verifyingPassword ? (
+                    <>
+                      <ActivityIndicator size="small" color="#fff" />
+                      <Text style={styles.verifyButtonText}>
+                        Đang xác thực...
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.verifyButtonText}>Xác nhận</Text>
+                  )}
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     );
   }

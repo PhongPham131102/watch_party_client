@@ -16,7 +16,9 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Dimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRoomStore } from "@/store/room.store";
 import { useAuthStore } from "@/store/auth.store";
@@ -205,11 +207,23 @@ export default function ChatTab() {
     return null;
   };
 
+  const insets = useSafeAreaInsets();
+  const screenWidth = Dimensions.get("window").width;
+  const videoHeight = (screenWidth * 9) / 16;
+  const headerHeight = 60; // Approximate height of room header
+  const tabsHeight = 50; // Approximate height of tabs bar
+
+  // Calculate total offset from top: notch + room header + video + tabs
+  const keyboardOffset =
+    Platform.OS === "ios"
+      ? insets.top + headerHeight + videoHeight + tabsHeight - 10
+      : 0;
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={keyboardOffset}
     >
       <FlatList
         ref={flatListRef}
