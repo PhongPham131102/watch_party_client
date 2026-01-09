@@ -7,7 +7,9 @@ import {
   Alert,
   TextInput,
   Pressable,
+  Share,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -323,9 +325,31 @@ export default function RoomDetailScreen() {
 
     roomSocketService.onMemberAdded((member) => {
       addMember(member);
+      const userObj = member.user as any;
+      const name =
+        userObj?.profile?.fullName || userObj?.username || "Người dùng";
+      Toast.show({
+        type: "info",
+        text1: "Thành viên mới",
+        text2: `${name} đã tham gia phòng`,
+      });
     });
 
     roomSocketService.onMemberRemoved((data) => {
+      const member = members.find(
+        (m) =>
+          (typeof m.user === "object" ? m.user?.id : m.user) === data.userId
+      );
+      if (member) {
+        const userObj = member.user as any;
+        const name =
+          userObj?.profile?.fullName || userObj?.username || "Người dùng";
+        Toast.show({
+          type: "info",
+          text1: "Thành viên rời đi",
+          text2: `${name} đã rời khỏi phòng`,
+        });
+      }
       removeMember(data.userId);
     });
 
@@ -523,9 +547,99 @@ export default function RoomDetailScreen() {
             onPress={() => router.back()}
             style={styles.backButton}
           />
-          <Text style={styles.roomTitle} numberOfLines={1}>
-            {currentRoom?.name || roomInfo?.name || `Phòng: ${roomCode}`}
-          </Text>
+          <View style={styles.roomInfoContainer}>
+            <Text style={styles.roomTitle} numberOfLines={1}>
+              {currentRoom?.name || roomInfo?.name || `Phòng: ${roomCode}`}
+            </Text>
+            <View style={styles.headerBadges}>
+              <Pressable
+                style={styles.roomCodeBadge}
+                onPress={async () => {
+                  await Clipboard.setStringAsync(roomCode);
+                  Toast.show({
+                    type: "info",
+                    text1: "Đã sao chép",
+                    text2: `Mã phòng ${roomCode} đã được copy`,
+                  });
+                }}
+              >
+                <Text style={styles.roomCodeText}>{roomCode}</Text>
+              </Pressable>
+
+              <View
+                style={[
+                  styles.typeBadge,
+                  {
+                    backgroundColor:
+                      roomInfo?.type === "public"
+                        ? "rgba(34, 197, 94, 0.2)"
+                        : "rgba(239, 68, 68, 0.2)",
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor:
+                        roomInfo?.type === "public" ? "#22c55e" : "#ef4444",
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.typeBadgeText,
+                    {
+                      color:
+                        roomInfo?.type === "public" ? "#22c55e" : "#ef4444",
+                    },
+                  ]}
+                >
+                  {roomInfo?.type === "public" ? "Công khai" : "Riêng tư"}
+                </Text>
+              </View>
+
+              {userRole &&
+                (userRole === "owner" || userRole === "moderator") && (
+                  <View
+                    style={[
+                      styles.roleBadge,
+                      {
+                        backgroundColor:
+                          userRole === "owner"
+                            ? "rgba(239, 68, 68, 0.2)"
+                            : "rgba(249, 115, 22, 0.2)",
+                      },
+                      {
+                        borderColor:
+                          userRole === "owner" ? "#ef4444" : "#f97316",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.roleBadgeText,
+                        { color: userRole === "owner" ? "#ef4444" : "#f97316" },
+                      ]}
+                    >
+                      {userRole === "owner" ? "Chủ phòng" : "Quản trị viên"}
+                    </Text>
+                  </View>
+                )}
+            </View>
+          </View>
+          <Ionicons
+            name="share-outline"
+            size={24}
+            color="white"
+            onPress={() => {
+              Share.share({
+                message: `Tham gia phòng xem chung với tôi! Mã phòng: ${roomCode}`,
+                title: "Watch Party",
+              });
+            }}
+            style={styles.shareButton}
+          />
         </View>
 
         <View style={styles.videoPlaceholder}>
@@ -703,16 +817,65 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: "#000",
+    paddingVertical: 12,
   },
   backButton: {
-    marginRight: 16,
+    marginRight: 12,
+  },
+  roomInfoContainer: {
+    flex: 1,
+    gap: 2,
   },
   roomTitle: {
     color: "white",
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
+  },
+  headerBadges: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  roomCodeBadge: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  roomCodeText: {
+    color: "#9ca3af",
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  roleBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  roleBadgeText: {
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  typeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  shareButton: {
+    marginLeft: 12,
   },
   videoPlaceholder: {
     width: "100%",

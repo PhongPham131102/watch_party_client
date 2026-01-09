@@ -64,19 +64,20 @@ export default function HomeScreen() {
 
         <View style={styles.listsContainer}>
           <MovieSwiper
-            title="Đang chiếu"
-            genreSlug=""
-            autoFetch={false}
-            movies={heroSections?.map((h) => h.movie) || []} // Tạm thời dùng hero sections làm list mẫu
-          />
-
-          <MovieSwiper
             title="Hành động"
             genreSlug="hanh-dong"
             autoFetch={true}
           />
 
-          <MovieSwiper title="Tình cảm" genreSlug="tinh-cam" autoFetch={true} />
+          <MovieSwiper title="Tội phạm" genreSlug="toi-pham" autoFetch={true} />
+
+          <MovieSwiper
+            title="Phiêu lưu"
+            genreSlug="phieu-luu"
+            autoFetch={true}
+          />
+
+          <MovieSwiper title="Miền tây" genreSlug="mien-tay" autoFetch={true} />
 
           <MovieSwiper title="Kinh dị" genreSlug="kinh-di" autoFetch={true} />
         </View>

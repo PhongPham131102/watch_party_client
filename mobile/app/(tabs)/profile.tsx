@@ -27,6 +27,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ProfileScreen() {
   const { user, setUser, logout } = useAuthStore();
@@ -259,6 +260,24 @@ export default function ProfileScreen() {
           </View>
 
           <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/my-list")}
+          >
+            <View style={styles.menuItemLeft}>
+              <View
+                style={[
+                  styles.menuIconContainer,
+                  { backgroundColor: "rgba(239, 68, 68, 0.1)" },
+                ]}
+              >
+                <Ionicons name="heart" size={20} color="#ef4444" />
+              </View>
+              <Text style={styles.menuItemText}>Danh sách của tôi</Text>
+            </View>
+            <ChevronRight size={20} color="rgba(255,255,255,0.3)" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[
               styles.saveButton,
               updateProfileMutation.isPending && styles.saveButtonDisabled,
@@ -466,5 +485,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+  },
+  menuItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  menuIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuItemText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

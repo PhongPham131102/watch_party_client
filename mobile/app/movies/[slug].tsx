@@ -12,7 +12,9 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { movieService } from "@/services/movie.service";
+import { roomService } from "@/services/room.service";
 import { Movie, Episode } from "@/types/movie.types";
+import { RoomType } from "@/types/room.types";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,6 +24,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import MovieSwiper from "@/components/MovieSwiper";
 import { useAuthStore } from "@/store/auth.store";
 import Toast from "react-native-toast-message";
+import MovieComments from "@/components/MovieComments";
 
 const { width } = Dimensions.get("window");
 
@@ -335,7 +338,7 @@ export default function MovieDetailScreen() {
                   styles.secondaryButton,
                   pressed && { backgroundColor: "rgba(255,255,255,0.15)" },
                 ]}
-                onPress={() => {
+                onPress={async () => {
                   if (!isAuthenticated) {
                     Toast.show({
                       type: "info",
@@ -345,12 +348,32 @@ export default function MovieDetailScreen() {
                     router.push("/login");
                     return;
                   }
-                  // Temporary: Navigate to a test room
-                  // In real app, this would call API to create room then navigate
-                  const randomRoomCode = `party-${slug}-${Date.now()
-                    .toString()
-                    .slice(-4)}`;
-                  router.push(`/room/${randomRoomCode}`);
+
+                  try {
+                    Toast.show({
+                      type: "info",
+                      text1: "Đang tạo phòng...",
+                      autoHide: false,
+                    });
+
+                    const response = await roomService.createRoom({
+                      name: `Phòng của tôi - ${movie.title}`,
+                      type: RoomType.PUBLIC,
+                    } as any);
+
+                    Toast.hide();
+
+                    if (response.data?.code) {
+                      router.push(`/room/${response.data.code}`);
+                    }
+                  } catch (error) {
+                    Toast.hide();
+                    Toast.show({
+                      type: "error",
+                      text1: "Lỗi",
+                      text2: "Không thể tạo phòng xem chung.",
+                    });
+                  }
                 }}
               >
                 <Ionicons name="people-outline" size={24} color="white" />
@@ -386,51 +409,86 @@ export default function MovieDetailScreen() {
             {/* Episodes List (for Series) */}
             {isSeries && hasEpisodes && (
               <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>Danh sách tập</Text>
-                {/* Horizontal Scroll for chips/cards */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.episodeList}
-                >
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionTitle}>Danh sách tập</Text>
+                  <Text style={styles.episodeCount}>
+                    {movie.episodes!.length} tập
+                  </Text>
+                </View>
+
+                <View style={styles.episodeVerticalList}>
                   {movie.episodes!.map((ep) => {
                     const isSelected = currentEpisode?.id === ep.id;
+                    const durationText = ep.durationMinutes
+                      ? `${ep.durationMinutes}m`
+                      : "";
+
                     return (
                       <Pressable
                         key={ep.id}
                         style={[
-                          styles.episodeCard,
-                          isSelected && styles.episodeCardSelected,
+                          styles.episodeItem,
+                          isSelected && styles.episodeItemActive,
                         ]}
                         onPress={() => handleEpisodeSelect(ep)}
                       >
-                        <Text
-                          style={[
-                            styles.episodeNum,
-                            isSelected && styles.episodeNumSelected,
-                          ]}
-                        >
-                          {ep.episodeNumber}
-                        </Text>
+                        <View style={styles.episodeMainInfo}>
+                          <View
+                            style={[
+                              styles.episodeNumberBox,
+                              isSelected && styles.episodeNumberBoxActive,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.episodeNumberText,
+                                isSelected && styles.episodeNumberTextActive,
+                              ]}
+                            >
+                              {ep.episodeNumber}
+                            </Text>
+                          </View>
+                          <View style={styles.episodeTexts}>
+                            <Text
+                              style={[
+                                styles.episodeTitle,
+                                isSelected && styles.episodeTitleActive,
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {ep.title || `Tập ${ep.episodeNumber}`}
+                            </Text>
+                            {durationText ? (
+                              <Text style={styles.episodeDuration}>
+                                {durationText}
+                              </Text>
+                            ) : null}
+                          </View>
+                        </View>
+                        {isSelected && (
+                          <Ionicons
+                            name="play-circle"
+                            size={24}
+                            color="#ef4444"
+                          />
+                        )}
                       </Pressable>
                     );
                   })}
-                </ScrollView>
-                {currentEpisode && (
-                  <Text style={styles.currentEpTitle}>
-                    Tập {currentEpisode.episodeNumber}: {currentEpisode.title}
-                  </Text>
-                )}
+                </View>
               </View>
             )}
 
             {/* Recommendations */}
             {recommendations.length > 0 && (
               <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>Đề xuất cho bạn</Text>
+                <Text style={styles.sectionTitle}>Phim tương tự</Text>
                 <MovieSwiper movies={recommendations} />
               </View>
             )}
+
+            {/* Comments Section */}
+            {movie?.id && <MovieComments movieId={movie.id} />}
 
             {/* Bottom Padding */}
             <View style={{ height: 40 }} />
@@ -628,37 +686,73 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 12,
   },
-  episodeList: {
-    gap: 12,
-    paddingRight: 20,
-  },
-  episodeCard: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    justifyContent: "center",
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 12,
+  },
+  episodeCount: {
+    color: "#9ca3af",
+    fontSize: 14,
+  },
+  episodeVerticalList: {
+    gap: 12,
+  },
+  episodeItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
-  episodeCardSelected: {
-    backgroundColor: "#ef4444", // Primary brand color
+  episodeItemActive: {
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
     borderColor: "#ef4444",
   },
-  episodeNum: {
+  episodeMainInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 12,
+  },
+  episodeNumberBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  episodeNumberBoxActive: {
+    backgroundColor: "#ef4444",
+  },
+  episodeNumberText: {
     color: "white",
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  episodeNumberTextActive: {
+    color: "white",
+  },
+  episodeTexts: {
+    flex: 1,
+  },
+  episodeTitle: {
+    color: "white",
+    fontSize: 15,
     fontWeight: "600",
   },
-  episodeNumSelected: {
-    color: "white",
+  episodeTitleActive: {
+    color: "#ef4444",
   },
-  currentEpTitle: {
+  episodeDuration: {
     color: "#9ca3af",
-    marginTop: 8,
-    fontSize: 14,
-    fontStyle: "italic",
+    fontSize: 12,
+    marginTop: 2,
   },
   errorText: {
     color: "white",

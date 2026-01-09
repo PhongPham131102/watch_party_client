@@ -11,19 +11,43 @@ import { Movie } from "../types/movie.types";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 
+import { useWatchHistoryStore } from "../store/watch-history.store";
+
 interface MovieCardProps {
   movie: Movie;
   quality?: "HD" | "CAM";
   width?: number;
   height?: number;
+  progressSeconds?: number;
+  totalSeconds?: number;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-export default function MovieCard({ movie, width, height }: MovieCardProps) {
+export default function MovieCard({
+  movie,
+  width,
+  height,
+  progressSeconds: propProgress,
+  totalSeconds: propTotal,
+}: MovieCardProps) {
   const router = useRouter();
   const cardWidth = width || SCREEN_WIDTH * 0.4;
   const cardHeight = height || cardWidth * 1.5;
+
+  const globalProgress = useWatchHistoryStore(
+    (state) => state.progressMap[movie.id]
+  );
+
+  const progressSeconds =
+    propProgress !== undefined ? propProgress : globalProgress?.current;
+  const totalSeconds =
+    propTotal !== undefined ? propTotal : globalProgress?.total;
+
+  const progressPercentage =
+    progressSeconds && totalSeconds
+      ? Math.min(Math.round((progressSeconds / totalSeconds) * 100), 100)
+      : 0;
 
   return (
     <TouchableOpacity
@@ -41,6 +65,18 @@ export default function MovieCard({ movie, width, height }: MovieCardProps) {
         <View style={styles.badge}>
           <Text style={styles.badgeText}>HD</Text>
         </View>
+
+        {/* Progress Bar */}
+        {progressPercentage > 0 && (
+          <View style={styles.progressBarContainer}>
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${progressPercentage}%` },
+              ]}
+            />
+          </View>
+        )}
       </View>
 
       <View style={styles.infoContainer}>
@@ -122,5 +158,17 @@ const styles = StyleSheet.create({
   typeText: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 10,
+  },
+  progressBarContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#ef4444",
   },
 });
