@@ -89,14 +89,6 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const controlsTimeoutRef = useRef<any>(null);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const [showVolumeBar, setShowVolumeBar] = useState(false);
-  const [lastTap, setLastTap] = useState(0);
-  const [seekHint, setSeekHint] = useState<{
-    type: "forward" | "backward";
-    show: boolean;
-  }>({ type: "forward", show: false });
 
   // wantToPlayRef sync (Web logic)
   useEffect(() => {
@@ -268,44 +260,15 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
   return (
     <View style={isFullscreen ? styles.fullscreenContainer : styles.container}>
       <Pressable
-        onPress={(e) => {
-          const now = Date.now();
-          const DOUBLE_TAP_DELAY = 300;
-          if (now - lastTap < DOUBLE_TAP_DELAY) {
-            // Double tap detected
-            if (userRole === RoomMemberRole.MEMBER) return;
-
-            const { locationX } = e.nativeEvent;
-            const screenWidth = Dimensions.get("window").width;
-            const isForward = locationX > screenWidth / 2;
-
-            const seekAmount = isForward ? 10 : -10;
-            const newTime = Math.max(
-              0,
-              Math.min(duration, localCurrentTime + seekAmount)
+        onPress={() => {
+          setShowControls(!showControls);
+          if (controlsTimeoutRef.current)
+            clearTimeout(controlsTimeoutRef.current);
+          if (!showControls && isPlaying) {
+            controlsTimeoutRef.current = setTimeout(
+              () => setShowControls(false),
+              3000
             );
-
-            setSeekHint({
-              type: isForward ? "forward" : "backward",
-              show: true,
-            });
-            setTimeout(
-              () => setSeekHint((prev) => ({ ...prev, show: false })),
-              500
-            );
-
-            onSeek({ currentTime: newTime, roomCode: roomCode });
-          } else {
-            setLastTap(now);
-            setShowControls(!showControls);
-            if (controlsTimeoutRef.current)
-              clearTimeout(controlsTimeoutRef.current);
-            if (!showControls && isPlaying) {
-              controlsTimeoutRef.current = setTimeout(
-                () => setShowControls(false),
-                3000
-              );
-            }
           }
         }}
         style={styles.videoWrapper}
@@ -313,30 +276,13 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
         <Video
           ref={videoRef}
           style={styles.video}
+          // Use initialStatus for join-sync to avoid jumping from 0
           source={{ uri: episode.masterM3u8Minio }}
           status={{ positionMillis: currentTime * 1000, shouldPlay: isPlaying }}
           resizeMode={ResizeMode.CONTAIN}
           onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
           progressUpdateIntervalMillis={500}
         />
-
-        {seekHint.show && (
-          <View
-            style={[
-              styles.seekHintContainer,
-              seekHint.type === "forward" ? { right: 40 } : { left: 40 },
-            ]}
-          >
-            <Ionicons
-              name={seekHint.type === "forward" ? "play-forward" : "play-back"}
-              size={40}
-              color="rgba(255,255,255,0.8)"
-            />
-            <Text style={styles.seekHintText}>
-              {seekHint.type === "forward" ? "+10s" : "-10s"}
-            </Text>
-          </View>
-        )}
       </Pressable>
 
       {isLoading && !videoError && (
@@ -413,52 +359,6 @@ const VideoRoomPlayer: React.FC<VideoRoomPlayerProps> = ({
               <Text style={styles.timeText}>
                 {formatTime(displayTime)} / {formatTime(duration)}
               </Text>
-              <View style={styles.volumeContainer}>
-                {showVolumeBar && (
-                  <View style={styles.volumeBarContainer}>
-                    {[0, 0.2, 0.4, 0.6, 0.8, 1].map((v) => (
-                      <TouchableOpacity
-                        key={v}
-                        onPress={() => {
-                          setVolume(v);
-                          setIsMuted(v === 0);
-                          videoRef.current?.setVolumeAsync(v);
-                        }}
-                        style={[
-                          styles.volumeStep,
-                          {
-                            height: v * 30 + 5,
-                            backgroundColor:
-                              volume >= v ? "#ef4444" : "rgba(255,255,255,0.2)",
-                          },
-                        ]}
-                      />
-                    ))}
-                  </View>
-                )}
-                <TouchableOpacity
-                  onPress={() => setShowVolumeBar(!showVolumeBar)}
-                  onLongPress={() => {
-                    const newMute = !isMuted;
-                    setIsMuted(newMute);
-                    videoRef.current?.setVolumeAsync(newMute ? 0 : volume);
-                  }}
-                >
-                  <Ionicons
-                    name={
-                      isMuted || volume === 0
-                        ? "volume-mute"
-                        : volume < 0.5
-                        ? "volume-low"
-                        : "volume-high"
-                    }
-                    size={22}
-                    color="white"
-                    style={{ marginRight: 12 }}
-                  />
-                </TouchableOpacity>
-              </View>
-
               <TouchableOpacity onPress={toggleFullscreen}>
                 <Ionicons
                   name={isFullscreen ? "contract" : "expand"}
@@ -565,50 +465,11 @@ const styles = StyleSheet.create({
   progressKnob: {
     position: "absolute",
     right: -6,
-    top: -6,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#ef4444",
-    borderWidth: 3,
-    borderColor: "white",
-  },
-  volumeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    position: "relative",
-  },
-  volumeBarContainer: {
-    position: "absolute",
-    bottom: 30,
-    left: -10,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    padding: 10,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 4,
-    height: 60,
-  },
-  volumeStep: {
-    width: 6,
-    borderRadius: 2,
-  },
-  seekHintContainer: {
-    position: "absolute",
-    top: "50%",
-    marginTop: -40,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  seekHintText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
+    top: -4,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#fff",
   },
   memberLock: { alignItems: "center", gap: 12 },
   lockText: { color: "rgba(255,255,255,0.6)", fontSize: 14, fontWeight: "500" },

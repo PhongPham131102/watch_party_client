@@ -86,8 +86,10 @@ export default function ForgotPasswordFlow() {
       const errorCode = err?.errorCode as ErrorCode;
       let msg = "Không thể gửi email xác nhận. Vui lòng thử lại sau.";
 
-      if (errorCode === ErrorCode.VALIDATION_ERROR) {
-        msg = "Email không đúng định dạng";
+      if (errorCode === ErrorCode.AUTH_EMAIL_NOT_FOUND) {
+        msg = "Email này chưa được đăng ký tài khoản.";
+      } else if (errorCode === ErrorCode.VALIDATION_ERROR) {
+        msg = "Vui lòng nhập đúng định dạng email.";
       } else if (errorCode === ErrorCode.INTERNAL_SERVER_ERROR) {
         msg = "Lỗi khi gửi mail hoặc lỗi server";
       }

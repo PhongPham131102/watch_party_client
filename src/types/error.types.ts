@@ -21,6 +21,7 @@ export enum ErrorCode {
   AUTH_INSUFFICIENT_PERMISSIONS = "ERR_2005",
   AUTH_ACCOUNT_NOT_FOUND = "ERR_2006",
   AUTH_REFRESH_TOKEN_NOT_FOUND = "ERR_2007",
+  AUTH_EMAIL_NOT_FOUND = "ERR_2008",
   // User Errors (2100-2199)
   USER_NOT_FOUND = "ERR_2100",
   USER_EMAIL_EXISTS = "ERR_2101",
@@ -121,6 +122,7 @@ export const ErrorCodeMessage: Record<ErrorCode, string> = {
   [ErrorCode.AUTH_INSUFFICIENT_PERMISSIONS]: "Không có quyền thực hiện",
   [ErrorCode.AUTH_ACCOUNT_NOT_FOUND]: "Tài khoản không tồn tại",
   [ErrorCode.AUTH_REFRESH_TOKEN_NOT_FOUND]: "Refresh token không tìm thấy",
+  [ErrorCode.AUTH_EMAIL_NOT_FOUND]: "Email không tồn tại trên hệ thống",
   // User
   [ErrorCode.USER_NOT_FOUND]: "Người dùng không tồn tại",
   [ErrorCode.USER_EMAIL_EXISTS]: "Email đã được sử dụng",
