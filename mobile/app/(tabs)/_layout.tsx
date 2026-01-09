@@ -5,7 +5,8 @@ import { View, Platform } from "react-native";
 import { HapticTab } from "@/components/haptic-tab";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Home, Compass, User } from "lucide-react-native";
+import { Home, User } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -48,7 +49,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: "Explore",
+          title: "Search",
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
@@ -57,10 +58,11 @@ export default function TabLayout() {
                 top: Platform.OS === "ios" ? 10 : 0,
               }}
             >
-              <Compass
+              <Ionicons
+                name="search"
                 size={28}
                 color={color}
-                strokeWidth={focused ? 2.5 : 2}
+                style={{ fontWeight: focused ? "bold" : "normal" }}
               />
             </View>
           ),

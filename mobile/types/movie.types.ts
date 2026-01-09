@@ -1,4 +1,6 @@
 import { Episode } from "./episode.types";
+export { Episode };
+
 import { PaginationMeta } from "./api.types";
 import { Genre } from "./genre.types";
 import { Director } from "./director.types";

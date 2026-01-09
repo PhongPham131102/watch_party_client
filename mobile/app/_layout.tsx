@@ -3,7 +3,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { QueryProvider } from "@/providers/query-provider";
@@ -18,9 +18,30 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import Toast from "react-native-toast-message";
 import { toastConfig } from "@/components/ui/ToastConfig";
+import { useEffect } from "react";
+import { DeviceEventEmitter } from "react-native";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener("unauthorized", () => {
+      logout();
+      Toast.show({
+        type: "error",
+        text1: "Session expired",
+        text2: "Please login again",
+      });
+      router.replace("/login");
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [logout, router]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

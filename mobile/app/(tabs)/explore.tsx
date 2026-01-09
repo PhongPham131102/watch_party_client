@@ -1,112 +1,174 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Platform,
+} from "react-native";
+import { Stack, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { movieService } from "@/services/movie.service";
+import { Movie } from "@/types/movie.types";
+import MovieCard from "@/components/MovieCard";
+import { StatusBar } from "expo-status-bar";
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+export default function SearchScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
-export default function TabTwoScreen() {
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (query.trim()) {
+        performSearch(query);
+      } else {
+        setMovies([]);
+        setHasSearched(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const performSearch = async (searchTerm: string) => {
+    try {
+      setLoading(true);
+      const response = await movieService.getPublicMovies({
+        search: searchTerm,
+        limit: 20,
+      });
+      setMovies(response.data.data);
+      setHasSearched(true);
+    } catch (error) {
+      console.error("Search error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderItem = ({ item }: { item: Movie }) => (
+    <View style={styles.gridItem}>
+      <MovieCard movie={item} width={180} height={200} />
+    </View>
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar style="light" />
+      {/* Search Header */}
+      <View style={styles.header}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={20} color="#9ca3af" />
+          <TextInput
+            style={styles.input}
+            placeholder="Tìm kiếm phim..."
+            placeholderTextColor="#9ca3af"
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            autoCapitalize="none"
+          />
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery("")}>
+              <Ionicons name="close-circle" size={20} color="#9ca3af" />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {/* Content */}
+      {loading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#ef4444" />
+        </View>
+      ) : (
+        <FlatList
+          data={movies}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          contentContainerStyle={styles.listContent}
+          columnWrapperStyle={styles.columnWrapper}
+          ListEmptyComponent={
+            hasSearched ? (
+              <View style={styles.centerContainer}>
+                <Text style={styles.emptyText}>
+                  Không tìm thấy phim nào cho "{query}"
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.centerContainer}>
+                <Ionicons
+                  name="film-outline"
+                  size={48}
+                  color="#374151"
+                  style={{ marginBottom: 12 }}
+                />
+                <Text style={styles.emptyText}>Nhập tên phim để tìm kiếm</Text>
+              </View>
+            )
+          }
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: "#0e0f14",
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    paddingTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.05)",
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  input: {
+    flex: 1,
+    color: "white",
+    marginLeft: 8,
+    fontSize: 16,
+    height: "100%",
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 100, // Bottom tab padding
+  },
+  columnWrapper: {
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  gridItem: {
+    width: "48%",
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 40,
+  },
+  emptyText: {
+    color: "#9ca3af",
+    fontSize: 16,
   },
 });
