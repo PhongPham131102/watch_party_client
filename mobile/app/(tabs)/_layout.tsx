@@ -69,6 +69,28 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="watch-party"
+        options={{
+          title: "Watch Party",
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                top: Platform.OS === "ios" ? 10 : 0,
+              }}
+            >
+              <Ionicons
+                name="people"
+                size={28}
+                color={color}
+                style={{ fontWeight: focused ? "bold" : "normal" }}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",

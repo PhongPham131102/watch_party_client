@@ -329,6 +329,33 @@ export default function MovieDetailScreen() {
                 <Ionicons name="share-outline" size={24} color="white" />
                 <Text style={styles.secondaryButtonText}>Chia sẻ</Text>
               </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && { backgroundColor: "rgba(255,255,255,0.15)" },
+                ]}
+                onPress={() => {
+                  if (!isAuthenticated) {
+                    Toast.show({
+                      type: "info",
+                      text1: "Yêu cầu đăng nhập",
+                      text2: "Vui lòng đăng nhập để tạo phòng.",
+                    });
+                    router.push("/login");
+                    return;
+                  }
+                  // Temporary: Navigate to a test room
+                  // In real app, this would call API to create room then navigate
+                  const randomRoomCode = `party-${slug}-${Date.now()
+                    .toString()
+                    .slice(-4)}`;
+                  router.push(`/room/${randomRoomCode}`);
+                }}
+              >
+                <Ionicons name="people-outline" size={24} color="white" />
+                <Text style={styles.secondaryButtonText}>Xem chung</Text>
+              </Pressable>
             </View>
 
             {/* Description */}
