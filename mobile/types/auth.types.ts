@@ -41,3 +41,9 @@ export interface GetMeReponse extends ApiResponse {
     user: User;
   };
 }
+
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}

@@ -28,6 +28,10 @@ import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
+import { authService } from "@/services/auth.service";
+import { ErrorCode, ErrorCodeMessage } from "@/types/error.types";
+import { ApiResponse } from "@/types/api.types";
+import { changePasswordSchema } from "@/schemas/auth.schema";
 
 export default function ProfileScreen() {
   const { user, setUser, logout } = useAuthStore();
@@ -300,12 +304,244 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Change Password Section */}
+        <ChangePasswordSection />
+
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <LogOut size={20} color={Colors.dark.text} />
           <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
       </ScrollView>
+    </View>
+  );
+}
+
+function ChangePasswordSection() {
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: any) => authService.changePassword(data),
+    onSuccess: () => {
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: "Thay đổi mật khẩu thành công",
+      });
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setErrors({});
+    },
+    onError: (error: ApiResponse) => {
+      const errorCode = error.errorCode;
+
+      if (
+        errorCode === ErrorCode.USER_INVALID_PASSWORD ||
+        errorCode === ErrorCode.AUTH_INVALID_CREDENTIALS
+      ) {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Mật khẩu hiện tại không chính xác",
+        });
+      } else if (errorCode === ErrorCode.AUTH_ACCOUNT_NOT_FOUND) {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Tài khoản không tồn tại hoặc đã bị đăng xuất",
+        });
+      } else if (errorCode && ErrorCodeMessage[errorCode]) {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: ErrorCodeMessage[errorCode],
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: error?.message || "Lỗi khi thay đổi mật khẩu",
+        });
+      }
+    },
+  });
+
+  const handlePasswordSubmit = () => {
+    // Clear previous errors
+    setErrors({});
+
+    // Validate with Zod
+    const result = changePasswordSchema.safeParse({
+      oldPassword,
+      newPassword,
+      confirmPassword,
+    });
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        if (issue.path[0]) {
+          fieldErrors[issue.path[0] as string] = issue.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    changePasswordMutation.mutate({
+      oldPassword,
+      newPassword,
+      confirmPassword,
+    });
+  };
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.sectionTitle}>Đổi mật khẩu</Text>
+      <Text style={styles.sectionSubtitle}>
+        Bảo mật tài khoản của bạn bằng cách thay đổi mật khẩu định kỳ.
+      </Text>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Mật khẩu hiện tại</Text>
+        <View
+          style={[
+            styles.inputContainer,
+            errors.oldPassword && styles.inputErrorBorder,
+          ]}
+        >
+          <Shield
+            size={20}
+            color="rgba(255,255,255,0.5)"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            value={oldPassword}
+            onChangeText={(text) => {
+              setOldPassword(text);
+              if (errors.oldPassword) setErrors({ ...errors, oldPassword: "" });
+            }}
+            placeholder="••••••••"
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            style={styles.input}
+            secureTextEntry={!showOldPassword}
+          />
+          <TouchableOpacity
+            onPress={() => setShowOldPassword(!showOldPassword)}
+          >
+            <Ionicons
+              name={showOldPassword ? "eye-off" : "eye"}
+              size={20}
+              color="rgba(255,255,255,0.5)"
+            />
+          </TouchableOpacity>
+        </View>
+        {errors.oldPassword ? (
+          <Text style={styles.errorText}>{errors.oldPassword}</Text>
+        ) : null}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Mật khẩu mới</Text>
+        <View
+          style={[
+            styles.inputContainer,
+            errors.newPassword && styles.inputErrorBorder,
+          ]}
+        >
+          <Shield
+            size={20}
+            color="rgba(255,255,255,0.5)"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            value={newPassword}
+            onChangeText={(text) => {
+              setNewPassword(text);
+              if (errors.newPassword) setErrors({ ...errors, newPassword: "" });
+            }}
+            placeholder="••••••••"
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            style={styles.input}
+            secureTextEntry={!showNewPassword}
+          />
+          <TouchableOpacity
+            onPress={() => setShowNewPassword(!showNewPassword)}
+          >
+            <Ionicons
+              name={showNewPassword ? "eye-off" : "eye"}
+              size={20}
+              color="rgba(255,255,255,0.5)"
+            />
+          </TouchableOpacity>
+        </View>
+        {errors.newPassword ? (
+          <Text style={styles.errorText}>{errors.newPassword}</Text>
+        ) : null}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Xác nhận mật khẩu mới</Text>
+        <View
+          style={[
+            styles.inputContainer,
+            errors.confirmPassword && styles.inputErrorBorder,
+          ]}
+        >
+          <Shield
+            size={20}
+            color="rgba(255,255,255,0.5)"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            value={confirmPassword}
+            onChangeText={(text) => {
+              setConfirmPassword(text);
+              if (errors.confirmPassword)
+                setErrors({ ...errors, confirmPassword: "" });
+            }}
+            placeholder="••••••••"
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            style={styles.input}
+            secureTextEntry={!showConfirmPassword}
+          />
+          <TouchableOpacity
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <Ionicons
+              name={showConfirmPassword ? "eye-off" : "eye"}
+              size={20}
+              color="rgba(255,255,255,0.5)"
+            />
+          </TouchableOpacity>
+        </View>
+        {errors.confirmPassword ? (
+          <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+        ) : null}
+      </View>
+
+      <TouchableOpacity
+        style={[
+          styles.saveButton,
+          { backgroundColor: "rgba(255,255,255,0.1)", shadowOpacity: 0 },
+          changePasswordMutation.isPending && styles.saveButtonDisabled,
+        ]}
+        onPress={handlePasswordSubmit}
+        disabled={changePasswordMutation.isPending}
+      >
+        {changePasswordMutation.isPending ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.saveButtonText}>Đổi mật khẩu</Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -413,6 +649,11 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
     marginBottom: 4,
   },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.5)",
+    marginBottom: 16,
+  },
   inputGroup: {
     marginBottom: 16,
   },
@@ -434,6 +675,14 @@ const styles = StyleSheet.create({
   inputContainerActive: {
     backgroundColor: "rgba(255,255,255,0.08)",
     borderColor: "rgba(255,255,255,0.2)",
+  },
+  inputErrorBorder: {
+    borderColor: "rgba(239, 68, 68, 0.5)",
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 12,
+    marginTop: 4,
   },
   disabledGroup: {
     opacity: 0.7,
