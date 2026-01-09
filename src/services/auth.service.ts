@@ -45,6 +45,18 @@ export class AuthService {
       throw error as ApiResponse;
     }
   }
+
+  async changePassword(data: any): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse>(
+        "/auth/change-password",
+        data
+      );
+      return response;
+    } catch (error) {
+      throw error as ApiResponse;
+    }
+  }
 }
 
 export const authService = new AuthService();
