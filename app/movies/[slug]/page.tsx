@@ -2,15 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { Clock, Play, Share2, Star } from "lucide-react";
+import { Clock, Play, Share2, Star, Heart, Check } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 
 import MovieSwiper from "@/src/components/MovieSwiper";
 import { useMovieDetailStore } from "@/src/store/movieDetailStore";
 import { useMovieRecommendationsStore } from "@/src/store/movieRecommendationsStore";
+import { useFavoriteStore } from "@/src/store/favoriteStore";
+import { useAuthStore } from "@/src/store/auth.store";
 
 const VideoPlayer = dynamic(() => import("@/src/components/VideoPlayer"), {
+  ssr: false,
+});
+
+const MovieComments = dynamic(() => import("@/src/components/MovieComments"), {
   ssr: false,
 });
 
@@ -34,12 +40,27 @@ export default function MovieDetailView() {
     error: recommendationsError,
     fetchRecommendations,
   } = useMovieRecommendationsStore();
+  const { favorites, toggleFavorite, fetchFavorites } = useFavoriteStore();
+  const { isAuthenticated } = useAuthStore();
+
+  const isFavorite = useMemo(() => {
+    return favorites.some((f) => f.id === movie?.id);
+  }, [favorites, movie?.id]);
 
   useEffect(() => {
     if (!slug) return;
     void fetchMovieDetail(slug);
     void fetchRecommendations(slug, 12);
-  }, [slug, fetchMovieDetail, fetchRecommendations]);
+    if (isAuthenticated) {
+      void fetchFavorites();
+    }
+  }, [
+    slug,
+    fetchMovieDetail,
+    fetchRecommendations,
+    isAuthenticated,
+    fetchFavorites,
+  ]);
 
   const description =
     movie?.description || "Thông tin phim đang được cập nhật.";
@@ -163,7 +184,7 @@ export default function MovieDetailView() {
 
               <div className="flex flex-col gap-3 text-sm text-white/70">
                 <div className="flex items-center gap-4 text-base font-medium">
-                  <span className="flex items-center gap-1 text-[#0cb05c]">
+                  <span className="flex items-center gap-1 text-yellow-400">
                     <Star size={18} fill="currentColor" />
                     {ratingValue ?? "?"}
                   </span>
@@ -208,7 +229,7 @@ export default function MovieDetailView() {
                 {isLongDescription && (
                   <button
                     onClick={() => setShowFullDescription((prev) => !prev)}
-                    className="text-sm font-semibold text-[#39c98e]">
+                    className="text-sm font-semibold text-primary">
                     {showFullDescription ? "Thu gọn" : "Hiển thị thêm"}
                   </button>
                 )}
@@ -217,14 +238,35 @@ export default function MovieDetailView() {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handlePlayClick}
-                  className="cursor-pointer flex items-center gap-2 rounded-full bg-[#0cb05c] px-6 py-3 text-sm font-semibold text-[#02100a] transition hover:bg-[#0fd472]">
-                  <Play size={16} />
+                  className="cursor-pointer flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">
+                  <Play size={16} fill="currentColor" />
                   Chiếu phát
                 </button>
                 <button className="cursor-pointer flex items-center gap-2 rounded-full border border-white/10 px-6 py-3 text-sm font-semibold text-white/80 transition hover:border-white/40">
                   <Share2 size={16} />
                   Chia sẻ
                 </button>
+                {isAuthenticated && (
+                  <button
+                    onClick={() => movie && toggleFavorite(movie)}
+                    className={`cursor-pointer flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition ${
+                      isFavorite
+                        ? "bg-primary border-primary text-white hover:bg-primary/90"
+                        : "border-white/10 text-white/80 hover:border-white/40"
+                    }`}>
+                    {isFavorite ? (
+                      <>
+                        <Check size={16} />
+                        Đã trong danh sách
+                      </>
+                    ) : (
+                      <>
+                        <Heart size={16} />
+                        Danh sách của tôi
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -237,7 +279,6 @@ export default function MovieDetailView() {
           </div>
         </div>
       )}
-
       {isPlaying && (
         <section className="px-6 py-16 md:px-12 lg:px-16">
           <div
@@ -250,6 +291,8 @@ export default function MovieDetailView() {
                   <VideoPlayer
                     src={streamUrl}
                     videoId={currentEpisode?.id || movie.id}
+                    movieId={movie.id}
+                    episodeId={currentEpisode?.id}
                     className="h-[80vh]"
                   />
                 ) : (
@@ -276,7 +319,7 @@ export default function MovieDetailView() {
                     {movie.title}
                   </h2>
                   <div className="flex flex-wrap items-center gap-4 text-sm text-white/80">
-                    <span className="flex items-center gap-1 text-[#1ed760]">
+                    <span className="flex items-center gap-1 text-yellow-500">
                       <Star size={18} fill="currentColor" />
                       {ratingValue ?? "?"}
                     </span>
@@ -290,7 +333,9 @@ export default function MovieDetailView() {
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs text-white/60">
                     {[...countryLabels, ...genreLabels].map((tag) => (
-                      <span key={tag} className="rounded-full bg-white/5 px-3 py-1">
+                      <span
+                        key={tag}
+                        className="rounded-full bg-white/5 px-3 py-1">
                         {tag}
                       </span>
                     ))}
@@ -320,7 +365,7 @@ export default function MovieDetailView() {
                   {isLongDescription && (
                     <button
                       onClick={() => setShowFullDescription((prev) => !prev)}
-                      className="text-sm font-semibold text-[#39c98e]">
+                      className="text-sm font-semibold text-primary">
                       {showFullDescription ? "Thu gọn" : "Hiển thị thêm"}
                     </button>
                   )}
@@ -355,7 +400,7 @@ export default function MovieDetailView() {
                         onClick={() => handleSelectEpisode(episode.id)}
                         className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
                           isCurrent
-                            ? "border-[#1ed760] bg-[#1ed760]/10 text-white"
+                            ? "border-primary bg-primary/10 text-white"
                             : "border-white/10 bg-white/5 text-white/80 hover:border-white/40"
                         }`}>
                         <div className="flex items-center justify-between">
@@ -380,11 +425,10 @@ export default function MovieDetailView() {
           </div>
         </section>
       )}
-
       <section className="space-y-6 px-6 py-12 md:px-12 lg:px-16">
         <div>
           <h2 className="text-2xl font-semibold">Đề xuất cho bạn</h2>
-          <div className="mt-2 h-1 w-24 rounded-full bg-[#1ed760]" />
+          <div className="mt-2 h-1 w-24 rounded-full bg-primary" />
         </div>
 
         {isRecommendationsLoading ? (
@@ -398,6 +442,11 @@ export default function MovieDetailView() {
             Chưa có đề xuất nào phù hợp cho phim này.
           </p>
         )}
+      </section>{" "}
+      <section className="w-full flex justify-center px-6 py-12 md:px-12 lg:px-16">
+        <div className="w-full max-w-4xl mx-auto">
+          <MovieComments movieId={movie.id} />
+        </div>
       </section>
     </div>
   );

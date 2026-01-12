@@ -4,15 +4,26 @@ import { useState } from "react";
 import Image from "next/image";
 import { Play } from "lucide-react";
 import { Movie } from "@/src/types/movie.types";
+import { useWatchHistoryStore } from "@/src/store/watchHistoryStore";
 
 interface MovieCardProps {
   movie: Movie;
   quality?: "HD" | "CAM";
   showPlayButton?: boolean;
+  progressSeconds?: number;
+  totalSeconds?: number;
 }
 
-export default function MovieCard({ movie }: MovieCardProps) {
+export default function MovieCard({ movie, progressSeconds: propProgress, totalSeconds: propTotal }: MovieCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const globalProgress = useWatchHistoryStore((state) => state.progressMap[movie.id]);
+
+  const progressSeconds = propProgress !== undefined ? propProgress : globalProgress?.current;
+  const totalSeconds = propTotal !== undefined ? propTotal : globalProgress?.total;
+
+  const progressPercentage = (progressSeconds && totalSeconds)
+    ? Math.min(Math.round((progressSeconds / totalSeconds) * 100), 100)
+    : 0;
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -71,6 +82,16 @@ export default function MovieCard({ movie }: MovieCardProps) {
 
         {/* Gradient Overlay at Bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-20 bg-linear-to-t from-black/80 to-transparent" />
+
+        {/* Watch Progress Bar */}
+        {progressPercentage > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-30">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Movie Info */}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiClient } from "./api.service";
 import type { Movie } from "@/src/types/movie.types";
 import type { FindMoviesQueryDto, PaginationMeta } from "@/src/types/index";
@@ -119,8 +120,64 @@ export class MovieService {
       throw error;
     }
   }
+
+  /**
+   * Lấy danh sách phim yêu thích của người dùng
+   * @returns Promise<GetPublicMoviesResponse>
+   */
+  async getFavoriteMovies(): Promise<GetPublicMoviesResponse> {
+    try {
+      const response = await apiClient.get<GetPublicMoviesResponse>("/user-favorites");
+      return response;
+    } catch (error: any) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error fetching favorite movies:", {
+          message: error?.message,
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Thêm/Xóa phim khỏi danh sách yêu thích
+   * @param movieId - ID của phim
+   * @returns Promise<any>
+   */
+  async toggleFavorite(movieId: string): Promise<any> {
+    try {
+      const response = await apiClient.post<any>("/user-favorites/toggle", { movieId });
+      return response;
+    } catch (error: any) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error toggling favorite status:", {
+          movieId,
+          message: error?.message,
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Kiểm tra xem phim đã có trong danh sách yêu thích chưa
+   * @param movieId - ID của phim
+   * @returns Promise<{ isFavorite: boolean }>
+   */
+  async checkIsFavorite(movieId: string): Promise<{ isFavorite: boolean }> {
+    try {
+      const response = await apiClient.get<{ isFavorite: boolean }>(
+        `/user-favorites/check/${movieId}`
+      );
+      // Backend return direct object, and apiClient might wrap it or return as is depending on interceptor
+      // If it's standard response { success: true, data: { isFavorite: true } }
+      // Then response will be { isFavorite: true } if interceptor returns response.data
+      return (response as any).data || response;
+    } catch (error: any) {
+      return { isFavorite: false };
+    }
+  }
 }
 
 // Export instance để sử dụng
 export const movieService = new MovieService();
-

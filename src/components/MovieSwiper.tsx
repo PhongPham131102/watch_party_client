@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/carousel";
 import { Movie } from "@/src/types/movie.types";
 import MovieCard from "./MovieCard";
+import MovieCardSkeleton from "./MovieCardSkeleton";
+import MovieSwiperSkeleton from "./MovieSwiperSkeleton";
 import { useMoviesByGenre } from "@/src/hooks/useMoviesByGenre";
 
 interface MovieSwiperProps {
@@ -27,13 +29,17 @@ export default function MovieSwiper({
   autoFetch = false,
 }: MovieSwiperProps) {
   // Fetch movies theo genre nếu có genreSlug và autoFetch = true
-  const { movies: genreMovies } = useMoviesByGenre(
+  const { movies: genreMovies, isLoading } = useMoviesByGenre(
     autoFetch && genreSlug ? genreSlug : "",
     {}
   );
 
   // Sử dụng movies từ props hoặc từ genre hook
   const movies = propMovies || genreMovies;
+
+  if (isLoading && autoFetch) {
+    return <MovieSwiperSkeleton />;
+  }
 
   if (!movies.length) {
     return null;

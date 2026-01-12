@@ -11,108 +11,118 @@ import { FormLoginErrors } from "../types";
 import { toast } from "@/src/utils/toast";
 
 export default function LoginForm() {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [formErrors, setFormErrors] = useState<FormLoginErrors>({});
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormLoginErrors>({});
 
-    const { setUser, setTokens, closeAuthModal } = useAuthStore();
+  const { setUser, setTokens, closeAuthModal, openAuthModal } = useAuthStore();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setFormErrors({});
-        setIsLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormErrors({});
+    setIsLoading(true);
 
-        try {
-            // Validate form với Zod
-            const result = loginSchema.safeParse({ username, password });
+    try {
+      // Validate form với Zod
+      const result = loginSchema.safeParse({ username, password });
 
-            if (!result.success) {
-                const errors: FormLoginErrors = {};
-                result.error.issues.forEach((err) => {
-                    if (err.path[0]) {
-                        errors[err.path[0] as keyof FormLoginErrors] = err.message;
-                    }
-                });
-                setFormErrors(errors);
-                setIsLoading(false);
-                return;
+      if (!result.success) {
+        const errors: FormLoginErrors = {};
+        result.error.issues.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0] as keyof FormLoginErrors] = err.message;
+          }
+        });
+        setFormErrors(errors);
+        setIsLoading(false);
+        return;
+      }
+
+      // Nếu hợp lệ, gọi API
+      const response = await authService.login({
+        username,
+        password,
+      });
+
+      if (response.success && response.data) {
+        setUser(response.data.user);
+        setTokens(response.data.accessToken, response.data.refreshToken);
+        toast.success("Đăng nhập thành công!", "Chào mừng bạn quay trở lại");
+        closeAuthModal();
+      } else {
+        toast.error(response.message || "Đăng nhập thất bại");
+      }
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message || err?.message || "Đã xảy ra lỗi"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="username" className="text-white/80">
+          Tên đăng nhập
+        </Label>
+        <Input
+          id="username"
+          value={username}
+          onChange={(e) => {
+            setUsername(e.target.value);
+            if (formErrors.username) {
+              setFormErrors({ ...formErrors, username: undefined });
             }
+          }}
+          className="border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:border-primary focus-visible:ring-primary"
+          placeholder="Tên đăng nhập của bạn"
+        />
+        {formErrors.username && (
+          <p className="text-xs text-red-500">{formErrors.username}</p>
+        )}
+      </div>
 
-            // Nếu hợp lệ, gọi API
-            const response = await authService.login({
-                username,
-                password,
-            });
-
-            if (response.success && response.data) {
-                setUser(response.data.user);
-                setTokens(response.data.accessToken, response.data.refreshToken);
-                toast.success("Đăng nhập thành công!", "Chào mừng bạn quay trở lại");
-                closeAuthModal();
-            } else {
-                toast.error(response.message || "Đăng nhập thất bại");
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password" className="text-white/80">
+            Mật khẩu
+          </Label>
+          <button
+            type="button"
+            onClick={() => openAuthModal("forgot")}
+            className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Quên mật khẩu?
+          </button>
+        </div>
+        <Input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (formErrors.password) {
+              setFormErrors({ ...formErrors, password: undefined });
             }
-        } catch (err: any) {
-            toast.error(
-                err?.response?.data?.message || err?.message || "Đã xảy ra lỗi"
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    };
+          }}
+          className="border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:border-primary focus-visible:ring-primary"
+          placeholder="Mật khẩu của bạn"
+        />
+        {formErrors.password && (
+          <p className="text-xs text-red-500">{formErrors.password}</p>
+        )}
+      </div>
 
-    return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="username" className="text-white/80">
-                    Tên đăng nhập
-                </Label>
-                <Input
-                    id="username"
-                    value={username}
-                    onChange={(e) => {
-                        setUsername(e.target.value);
-                        if (formErrors.username) {
-                            setFormErrors({ ...formErrors, username: undefined });
-                        }
-                    }}
-                    className="border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:border-primary focus-visible:ring-primary"
-                    placeholder="Tên đăng nhập của bạn"
-                />
-                {formErrors.username && (
-                    <p className="text-xs text-red-500">{formErrors.username}</p>
-                )}
-            </div>
-
-            <div className="space-y-2">
-                <Label htmlFor="password" className="text-white/80">
-                    Mật khẩu
-                </Label>
-                <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (formErrors.password) {
-                            setFormErrors({ ...formErrors, password: undefined });
-                        }
-                    }}
-                    className="border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:border-primary focus-visible:ring-primary"
-                    placeholder="Mật khẩu của bạn"
-                />
-                {formErrors.password && (
-                    <p className="text-xs text-red-500">{formErrors.password}</p>
-                )}
-            </div>
-
-            <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-primary text-white hover:bg-primary/90 font-bold transition-all duration-200">
-                {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
-            </Button>
-        </form>
-    );
+      <Button
+        type="submit"
+        disabled={isLoading}
+        className="w-full bg-primary text-white hover:bg-primary/90 font-bold transition-all duration-200"
+      >
+        {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+      </Button>
+    </form>
+  );
 }

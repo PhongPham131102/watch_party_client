@@ -1,26 +1,5 @@
-import { PaginationMeta, Genre, Director, Actor, Country, } from './index';
-
-export interface EpisodeQuality {
-  quality: string;
-  url: string;
-}
-
-export interface Episode {
-  id: string;
-  episodeNumber: number;
-  title: string;
-  description: string | null;
-  durationMinutes: number | null;
-  thumbnailUrl: string | null;
-  publishedAt: string | null;
-  masterM3u8S3: string | null;
-  masterM3u8Minio: string | null;
-  qualitiesS3: EpisodeQuality[];
-  qualitiesMinio: EpisodeQuality[];
-  uploadStatusS3?: string | null;
-  uploadStatusMinio?: string | null;
-  processingStatus?: string | null;
-}
+import { Episode } from "./episode.types";
+import { PaginationMeta, Genre, Director, Actor, Country } from "./index";
 
 export interface Movie {
   id: string;
@@ -32,6 +11,7 @@ export interface Movie {
   durationMinutes: number | null;
   posterUrl: string | null;
   backdropUrl: string | null;
+  titleImageUrl: string | null;
   trailerUrl: string | null;
   averageRating: string; // Backend trả về string
   totalRatings: number;
@@ -59,6 +39,7 @@ export interface MovieLegacy {
   durationMinutes: number | null;
   posterUrl: string | null;
   backdropUrl: string | null;
+  titleImageUrl: string | null;
   trailerUrl: string | null;
   averageRating: number;
   totalRatings: number;
@@ -84,8 +65,8 @@ export interface FindMoviesQueryDto {
   page?: number;
   limit?: number;
   search?: string;
-  status?: 'draft' | 'published' | 'archived';
-  contentType?: 'movie' | 'series';
+  status?: "draft" | "published" | "archived";
+  contentType?: "movie" | "series";
   releaseYearFrom?: number;
   releaseYearTo?: number;
   durationMinutesFrom?: number;
@@ -105,13 +86,13 @@ export interface FindMoviesQueryDto {
   directorIds?: string[];
   directorSlugs?: string[];
   sortBy?:
-  | 'title'
-  | 'releaseYear'
-  | 'averageRating'
-  | 'totalViews'
-  | 'totalRatings'
-  | 'durationMinutes'
-  | 'createdAt'
-  | 'updatedAt';
-  sortOrder?: 'ASC' | 'DESC';
+    | "title"
+    | "releaseYear"
+    | "averageRating"
+    | "totalViews"
+    | "totalRatings"
+    | "durationMinutes"
+    | "createdAt"
+    | "updatedAt";
+  sortOrder?: "ASC" | "DESC";
 }

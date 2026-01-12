@@ -13,6 +13,8 @@ import {
   MdSubtitles,
 } from "react-icons/md";
 import { twMerge } from "tailwind-merge";
+import { useWatchHistoryStore } from "@/src/store/watchHistoryStore";
+import { useAuthStore } from "@/src/store/auth.store";
 
 const replay10Icon = renderToStaticMarkup(
   <MdOutlineReplay10 size={24} color="white" />
@@ -78,23 +80,46 @@ interface VideoPlayerProps {
   src: string;
   className?: string;
   videoId: string;
+  movieId: string;
+  episodeId?: string;
   srtFiles?: SubtitleFile[];
   srtFile?: string;
   setSubtitleUrl?: (url: string) => void;
   originArtRef?: React.MutableRefObject<Artplayer | null>;
 }
 
+const EMPTY_ARRAY: any[] = [];
+
 export default function VideoPlayer({
   src,
   videoId,
+  movieId,
+  episodeId,
   className = "",
-  srtFiles = [],
+  srtFiles = EMPTY_ARRAY,
   srtFile = "",
   setSubtitleUrl,
   originArtRef,
 }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const artRef = useRef<Artplayer | null>(null);
+
+  const updateProgress = useWatchHistoryStore((state) => state.updateProgress);
+  const getProgress = useWatchHistoryStore((state) => state.getProgress);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  const lastHistoryUpdateRef = useRef<number>(0);
+
+  // Refs to keep values fresh inside listeners
+  const movieIdRef = useRef(movieId);
+  const episodeIdRef = useRef(episodeId);
+  const isAuthenticatedRef = useRef(isAuthenticated);
+
+  useEffect(() => {
+    movieIdRef.current = movieId;
+    episodeIdRef.current = episodeId;
+    isAuthenticatedRef.current = isAuthenticated;
+  }, [movieId, episodeId, isAuthenticated]);
 
   const uniqueSrtFiles = useMemo(
     () =>
@@ -111,10 +136,37 @@ export default function VideoPlayer({
   useEffect(() => {
     const container = containerRef.current;
     if (!container || !src) {
-      return () => {};
+      return () => { };
     }
 
+    const syncProgress = (isFinal = false) => {
+      const currentArt = artRef.current;
+      if (!currentArt || !isAuthenticatedRef.current) return;
+
+      const currentTime = Math.floor(currentArt.currentTime);
+      const duration = Math.floor(currentArt.duration);
+
+      if (currentTime > 0 && duration > 0) {
+        // Use navigator.sendBeacon for final exit if possible, but updateProgress is async axios
+        // For consistent logic, we just use the store's action
+        updateProgress({
+          movieId: movieIdRef.current,
+          episodeId: episodeIdRef.current,
+          watchDurationSeconds: currentTime,
+          totalDurationSeconds: duration,
+        });
+
+        // If closing tab, browser might kill the request. 
+        // In a real app we might use navigator.sendBeacon with a direct URL for 'isFinal'
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      syncProgress(true);
+    };
+
     const destroyArtPlayer = () => {
+      syncProgress(true); // Sync one last time before destroying
       if (artRef.current) {
         artRef.current.destroy();
         artRef.current = null;
@@ -142,23 +194,11 @@ export default function VideoPlayer({
     const art = new Artplayer({
       lang: "vi",
       i18n: {
-        ar: viDictionary,
-        cs: viDictionary,
-        es: viDictionary,
-        fa: viDictionary,
-        fr: viDictionary,
-        id: viDictionary,
-        ru: viDictionary,
-        tr: viDictionary,
-        en: viDictionary,
-        "zh-cn": viDictionary,
-        "zh-tw": viDictionary,
-        pl: viDictionary,
         vi: viDictionary,
       },
       container,
       autoplay: false,
-      theme: "#1ed760",
+      theme: "#E50914",
       fullscreen: true,
       pip: true,
       autoSize: true,
@@ -168,7 +208,7 @@ export default function VideoPlayer({
       loop: false,
       playbackRate: true,
       miniProgressBar: true,
-      autoPlayback: true,
+      autoPlayback: false,
       url: src,
       customType: {
         m3u8(video: HTMLMediaElement, url: string, artInstance: any) {
@@ -269,7 +309,35 @@ export default function VideoPlayer({
       style: { padding: "6px" },
     });
 
-    art.once("ready", () => {
+    art.on('video:timeupdate', () => {
+      const now = Date.now();
+      // Sync every 5 seconds per USER request
+      if (now - lastHistoryUpdateRef.current > 5000) {
+        syncProgress();
+        lastHistoryUpdateRef.current = now;
+      }
+    });
+
+    art.on('video:pause', () => {
+      syncProgress();
+    });
+
+    // Initial seek to last progress
+    const initProgress = async () => {
+      if (!isAuthenticatedRef.current) return;
+      try {
+        const progress = await getProgress(movieId, episodeId);
+        if (progress && progress.watchDurationSeconds > 10) {
+          art.currentTime = progress.watchDurationSeconds;
+          art.notice.show = `Đang phát tiếp từ ${Math.floor(progress.watchDurationSeconds / 60)}:${(Math.floor(progress.watchDurationSeconds) % 60).toString().padStart(2, '0')}`;
+        }
+      } catch (e) {
+        console.error("Failed to load initial progress", e);
+      }
+    };
+
+    art.once('ready', () => {
+      initProgress();
       const plugin: any = art.plugins?.multipleSubtitles;
       if (plugin && typeof plugin.reset === "function") {
         plugin.reset();
@@ -294,10 +362,14 @@ export default function VideoPlayer({
       }, 100);
     });
 
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       destroyArtPlayer();
     };
-  }, [src, srtFile, uniqueSrtFiles, videoId, setSubtitleUrl, originArtRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, srtFile, uniqueSrtFiles, videoId, movieId, episodeId]);
 
   return (
     <div

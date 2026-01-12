@@ -2,7 +2,8 @@
 import { create } from "zustand";
 import { movieService } from "@/src/services/movie.service";
 import type { Movie } from "@/src/types/movie.types";
-import type { FindMoviesQueryDto, PaginationMeta } from "@/src/types/api.types";
+import type { FindMoviesQueryDto } from "@/src/types/movie.types";
+import type { PaginationMeta } from "@/src/types/api.types";
 
 // State interface
 interface MovieState {
