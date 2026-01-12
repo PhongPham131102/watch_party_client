@@ -4,7 +4,7 @@ import { ApiResponse } from "../types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8888/api/v1";
-
+console.log("API_BASE_URL; ", API_BASE_URL);
 export class ApiClient {
   private axiosInstance: AxiosInstance;
 

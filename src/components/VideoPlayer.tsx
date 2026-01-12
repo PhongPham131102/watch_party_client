@@ -69,7 +69,7 @@ const API_SOURCE_URL =
   process.env.NEXT_PUBLIC_API_SOURCE_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   "http://localhost:8888/api/v1";
-
+console.log("API_SOURCE_URL: ", API_SOURCE_URL);
 export interface SubtitleFile {
   language: string;
   file_name: string;
@@ -136,7 +136,7 @@ export default function VideoPlayer({
   useEffect(() => {
     const container = containerRef.current;
     if (!container || !src) {
-      return () => { };
+      return () => {};
     }
 
     const syncProgress = (isFinal = false) => {
@@ -156,7 +156,7 @@ export default function VideoPlayer({
           totalDurationSeconds: duration,
         });
 
-        // If closing tab, browser might kill the request. 
+        // If closing tab, browser might kill the request.
         // In a real app we might use navigator.sendBeacon with a direct URL for 'isFinal'
       }
     };
@@ -309,7 +309,7 @@ export default function VideoPlayer({
       style: { padding: "6px" },
     });
 
-    art.on('video:timeupdate', () => {
+    art.on("video:timeupdate", () => {
       const now = Date.now();
       // Sync every 5 seconds per USER request
       if (now - lastHistoryUpdateRef.current > 5000) {
@@ -318,7 +318,7 @@ export default function VideoPlayer({
       }
     });
 
-    art.on('video:pause', () => {
+    art.on("video:pause", () => {
       syncProgress();
     });
 
@@ -329,14 +329,18 @@ export default function VideoPlayer({
         const progress = await getProgress(movieId, episodeId);
         if (progress && progress.watchDurationSeconds > 10) {
           art.currentTime = progress.watchDurationSeconds;
-          art.notice.show = `Đang phát tiếp từ ${Math.floor(progress.watchDurationSeconds / 60)}:${(Math.floor(progress.watchDurationSeconds) % 60).toString().padStart(2, '0')}`;
+          art.notice.show = `Đang phát tiếp từ ${Math.floor(
+            progress.watchDurationSeconds / 60
+          )}:${(Math.floor(progress.watchDurationSeconds) % 60)
+            .toString()
+            .padStart(2, "0")}`;
         }
       } catch (e) {
         console.error("Failed to load initial progress", e);
       }
     };
 
-    art.once('ready', () => {
+    art.once("ready", () => {
       initProgress();
       const plugin: any = art.plugins?.multipleSubtitles;
       if (plugin && typeof plugin.reset === "function") {
@@ -362,10 +366,10 @@ export default function VideoPlayer({
       }, 100);
     });
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       destroyArtPlayer();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
