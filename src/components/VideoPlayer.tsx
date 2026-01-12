@@ -68,7 +68,7 @@ const viDictionary = {
 const API_SOURCE_URL =
   process.env.NEXT_PUBLIC_API_SOURCE_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "http://localhost:8888/api/v1";
+  "";
 console.log("API_SOURCE_URL: ", API_SOURCE_URL);
 export interface SubtitleFile {
   language: string;
