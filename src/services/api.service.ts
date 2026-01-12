@@ -2,8 +2,12 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 import { ApiResponse } from "../types";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8888/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL; // Bỏ dấu || và quay về mặc định
+if (!API_BASE_URL) {
+  throw new Error(
+    "CRITICAL: NEXT_PUBLIC_API_BASE_URL is MISSING during build!"
+  );
+}
 console.log("API_BASE_URL; ", API_BASE_URL);
 export class ApiClient {
   private axiosInstance: AxiosInstance;
