@@ -1,8 +1,9 @@
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL =
-  process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8888";
-
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL;
+if (!SOCKET_URL) {
+  throw new Error("CRITICAL: NEXT_PUBLIC_SOCKET_URL is MISSING during build!");
+}
 type SocketNamespace = "base" | "chat" | "room";
 
 class SocketService {
