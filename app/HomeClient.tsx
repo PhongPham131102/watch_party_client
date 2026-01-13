@@ -32,11 +32,6 @@ export default function HomeClient() {
         />
 
         <MovieSwiper
-          title="Phim phiêu lưu"
-          genreSlug="phieu-luu"
-          autoFetch={true}
-        />
-        <MovieSwiper
           title="Phim miền tây"
           genreSlug="mien-tay"
           autoFetch={true}

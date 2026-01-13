@@ -4,27 +4,31 @@ import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function HeaderSearch() {
-  const [isOpen, setIsOpen] = useState(false);
+interface HeaderSearchProps {
+  isOpen: boolean;
+  onToggle: (isOpen: boolean) => void;
+}
+
+export default function HeaderSearch({ isOpen, onToggle }: HeaderSearchProps) {
   const [searchValue, setSearchValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const handleSearchClick = () => {
-    setIsOpen(true);
+    onToggle(true);
   };
 
   const handleClose = () => {
     setSearchValue("");
-    setIsOpen(false);
+    onToggle(false);
   };
 
   const handleSubmit = () => {
     const trimmed = searchValue.trim();
     if (!trimmed) return;
     router.push(`/search?q=${encodeURIComponent(trimmed)}`);
-    setIsOpen(false);
+    onToggle(false);
   };
 
   useEffect(() => {
@@ -40,14 +44,14 @@ export default function HeaderSearch() {
         !containerRef.current.contains(event.target as Node) &&
         !searchValue
       ) {
-        setIsOpen(false);
+        onToggle(false);
       }
     };
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && isOpen) {
         setSearchValue("");
-        setIsOpen(false);
+        onToggle(false);
       }
     };
 
@@ -68,18 +72,20 @@ export default function HeaderSearch() {
         <button
           onClick={handleSearchClick}
           className="p-2 transition-all duration-300 hover:opacity-70 hover:scale-110 text-white"
-          aria-label="Mở tìm kiếm">
+          aria-label="Mở tìm kiếm"
+        >
           <Search size={24} />
         </button>
       ) : (
-        <div className="relative flex items-center w-64">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center">
           <div
-            className="relative w-full"
+            className="relative w-[calc(100vw-80px)] sm:w-64 md:w-72"
             style={{
               animation: "slideInRight 0.3s ease-out",
-            }}>
+            }}
+          >
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 z-10 transition-colors duration-200"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 z-10"
               size={18}
             />
             <Input
@@ -93,15 +99,16 @@ export default function HeaderSearch() {
                   handleSubmit();
                 }
               }}
-              placeholder="Phim, diễn viên, thể loại..."
-              className="pl-10 pr-10 py-2.5 rounded-md bg-black/80 backdrop-blur-md border border-gray-500/30 text-white placeholder:text-white/50 focus:border-gray-400/50 focus:bg-black/90 focus:ring-2 focus:ring-gray-400/20 focus:outline-none transition-all duration-200 shadow-lg"
+              placeholder="Tìm kiếm phim..."
+              className="pl-10 pr-10 py-2 h-9 sm:h-10 text-sm rounded-md bg-black/95 backdrop-blur-md border border-gray-500/30 text-white placeholder:text-white/50 focus:border-gray-400/50 focus:bg-black/90 focus:outline-none shadow-2xl"
             />
             {searchValue && (
               <button
                 onClick={handleClose}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-all duration-200 hover:scale-110"
-                aria-label="Xóa tìm kiếm">
-                <X size={16} className="text-white/70" />
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-all"
+                aria-label="Delete"
+              >
+                <X size={14} className="text-white/70" />
               </button>
             )}
           </div>

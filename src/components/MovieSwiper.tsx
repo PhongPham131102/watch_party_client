@@ -49,13 +49,13 @@ export default function MovieSwiper({
     <div className={`space-y-4 ${className}`}>
       {/* Section Title */}
       {title && (
-        <h2 className="text-xl font-semibold text-white md:text-2xl lg:text-3xl px-6 md:px-12 lg:px-16">
+        <h2 className="text-xl font-semibold text-white md:text-2xl lg:text-3xl px-4 sm:px-6 md:px-12 lg:px-16">
           {title}
         </h2>
       )}
 
       {/* Carousel Container - tối đa 7 phim cùng lúc */}
-      <div className="px-6 md:px-12 lg:px-16">
+      <div className="px-4 sm:px-6 md:px-12 lg:px-16">
         <Carousel
           opts={{
             align: "start",

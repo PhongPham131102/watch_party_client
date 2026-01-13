@@ -3,7 +3,14 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Navigation } from "swiper/modules";
-import { Play, ChevronLeft, ChevronRight, Volume2, VolumeX, X } from "lucide-react";
+import {
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { HeroSection as HeroSectionType } from "@/src/types/hero-section.types";
@@ -21,20 +28,28 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [hasWindow] = useState(typeof window !== "undefined");
-  
+
   // Initialize video states for each hero section
-  const [videoStates, setVideoStates] = useState<Record<number, {
-    isPlaying: boolean;
-    isMuted: boolean;
-    showImage: boolean;
-    isReady: boolean;
-  }>>(() => {
-    const initialStates: Record<number, {
-      isPlaying: boolean;
-      isMuted: boolean;
-      showImage: boolean;
-      isReady: boolean;
-    }> = {};
+  const [videoStates, setVideoStates] = useState<
+    Record<
+      number,
+      {
+        isPlaying: boolean;
+        isMuted: boolean;
+        showImage: boolean;
+        isReady: boolean;
+      }
+    >
+  >(() => {
+    const initialStates: Record<
+      number,
+      {
+        isPlaying: boolean;
+        isMuted: boolean;
+        showImage: boolean;
+        isReady: boolean;
+      }
+    > = {};
     heroSections.forEach((_, index) => {
       initialStates[index] = {
         isPlaying: index === 0, // Chỉ play slide đầu tiên
@@ -52,9 +67,9 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
     setActiveIndex(newIndex);
 
     // Pause all videos except active one
-    setVideoStates(prev => {
+    setVideoStates((prev) => {
       const newStates = { ...prev };
-      Object.keys(newStates).forEach(key => {
+      Object.keys(newStates).forEach((key) => {
         const idx = parseInt(key);
         newStates[idx] = {
           ...newStates[idx],
@@ -72,7 +87,7 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
   };
 
   const toggleMute = (index: number) => {
-    setVideoStates(prev => ({
+    setVideoStates((prev) => ({
       ...prev,
       [index]: {
         ...prev[index],
@@ -82,7 +97,7 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
   };
 
   const skipTrailer = (index: number) => {
-    setVideoStates(prev => ({
+    setVideoStates((prev) => ({
       ...prev,
       [index]: {
         ...prev[index],
@@ -93,7 +108,7 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
   };
 
   const handleVideoReady = (index: number) => {
-    setVideoStates(prev => ({
+    setVideoStates((prev) => ({
       ...prev,
       [index]: {
         ...prev[index],
@@ -103,7 +118,7 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
   };
 
   const handleVideoStart = (index: number) => {
-    setVideoStates(prev => ({
+    setVideoStates((prev) => ({
       ...prev,
       [index]: {
         ...prev[index],
@@ -135,12 +150,14 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
           prevEl: ".swiper-button-prev-custom",
         }}
         onSlideChange={handleSlideChange}
-        className="h-full w-full hero-swiper">
+        className="h-full w-full hero-swiper"
+      >
         {heroSections.map((heroSection, index) => {
           const movie = heroSection.movie;
           // Sử dụng title/description từ hero section nếu có, nếu không thì dùng từ movie
           const displayTitle = heroSection.title || movie.title;
-          const displayDescription = heroSection.description || movie.description;
+          const displayDescription =
+            heroSection.description || movie.description;
 
           const videoState = videoStates[index] || {
             isPlaying: false,
@@ -152,7 +169,7 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
           // Thêm parameters vào URL để tắt tất cả controls và force chất lượng cao nhất
           const getVideoUrl = (url: string) => {
             if (!url) return url;
-            const separator = url.includes('?') ? '&' : '?';
+            const separator = url.includes("?") ? "&" : "?";
             return `${url}${separator}autoplay=1&controls=0&showinfo=0&rel=0&fs=0&modestbranding=1&disablekb=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1&hd=1&vq=hd1080&quality=high`;
           };
 
@@ -163,7 +180,7 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
                 <div className="absolute inset-0 z-0">
                   <div className="absolute inset-0 scale-[1.3]">
                     <ReactPlayer
-                      src={getVideoUrl(movie.trailerUrl || '')}
+                      src={getVideoUrl(movie.trailerUrl || "")}
                       playing={videoState.isPlaying && activeIndex === index}
                       muted={videoState.isMuted}
                       width="100%"
@@ -175,16 +192,23 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
                       onError={(e) => {
                         console.error("Video Error:", e);
                       }}
-                      style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        pointerEvents: "none",
+                      }}
                     />
                   </div>
                 </div>
               )}
 
               {/* Backdrop Image Layer - CHE PHỦ video cho đến khi sẵn sàng */}
-              <div 
+              <div
                 className={`absolute inset-0 z-20 transition-opacity duration-1000 ${
-                  movie.trailerUrl && !videoState.showImage && videoState.isReady
+                  movie.trailerUrl &&
+                  !videoState.showImage &&
+                  videoState.isReady
                     ? "opacity-0 pointer-events-none"
                     : "opacity-100"
                 }`}
@@ -195,10 +219,11 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
                     alt={displayTitle}
                     fill
                     priority={index === 0}
-                    className={`hero-backdrop-image ${activeIndex === index && !isTransitioning
-                      ? "opacity-100"
-                      : "opacity-0"
-                      }`}
+                    className={`hero-backdrop-image ${
+                      activeIndex === index && !isTransitioning
+                        ? "opacity-100"
+                        : "opacity-0"
+                    }`}
                     sizes="100vw"
                   />
                 ) : (
@@ -207,12 +232,14 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
               </div>
 
               {/* Content */}
-              <div className="relative z-30 flex h-full items-end pb-24 pl-6 md:pl-12 lg:pl-20">
+              <div className="relative z-30 flex h-full items-end pb-20 pl-4 sm:pl-6 md:pl-12 lg:pl-20">
                 <div
-                  className={`max-w-2xl flex flex-col gap-4 md:gap-6 transition-all duration-500 ${activeIndex === index && !isTransitioning
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-8"
-                    }`}>
+                  className={`max-w-2xl flex flex-col gap-4 md:gap-6 transition-all duration-500 ${
+                    activeIndex === index && !isTransitioning
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-8"
+                  }`}
+                >
                   {/* Title - Hiển thị titleImageUrl nếu có, nếu không thì hiển thị text */}
                   {movie.titleImageUrl ? (
                     <div className="relative w-full max-w-xs md:max-w-sm lg:max-w-md">
@@ -240,18 +267,23 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
 
                   {/* Description */}
                   {displayDescription && (
-                    <p className="max-w-2xl text-xs leading-relaxed text-white/95 line-clamp-3 md:text-sm lg:text-base" style={{
-                      textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8), 0px 0px 8px rgba(0, 0, 0, 0.6), 0px 0px 16px rgba(0, 0, 0, 0.4)'
-                    }}>
+                    <p
+                      className="max-w-2xl text-xs leading-relaxed text-white/95 line-clamp-3 md:text-sm lg:text-base"
+                      style={{
+                        textShadow:
+                          "2px 2px 4px rgba(0, 0, 0, 0.8), 0px 0px 8px rgba(0, 0, 0, 0.6), 0px 0px 16px rgba(0, 0, 0, 0.4)",
+                      }}
+                    >
                       {displayDescription}
                     </p>
                   )}
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-4 pt-2">
-                    <Link 
+                    <Link
                       href={`/movies/${movie.slug}`}
-                      className="group flex items-center gap-2 rounded-md bg-white px-8 py-3 font-semibold text-black shadow-xl transition-all hover:bg-white/90 hover:scale-105 active:scale-95">
+                      className="group flex items-center gap-2 rounded-md bg-white px-6 py-2 text-sm font-semibold text-black shadow-xl transition-all hover:bg-white/90 hover:scale-105 active:scale-95 md:px-8 md:py-3 md:text-base"
+                    >
                       <Play
                         size={22}
                         fill="currentColor"
@@ -264,24 +296,30 @@ export default function HeroSection({ heroSections }: HeroSectionProps) {
               </div>
 
               {/* Video Controls - Chỉ hiển thị khi video đang phát */}
-              {movie.trailerUrl && !videoState.showImage && activeIndex === index && (
-                <div className="absolute bottom-28 right-6 z-30 flex gap-3 md:bottom-32 md:right-10">
-                  <button
-                    onClick={() => toggleMute(index)}
-                    className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-all hover:bg-white/20 border border-white/10 shadow-xl"
-                  >
-                    {videoState.isMuted ? <VolumeX className="h-5 w-5 md:h-6 md:w-6" /> : <Volume2 className="h-5 w-5 md:h-6 md:w-6" />}
-                  </button>
+              {movie.trailerUrl &&
+                !videoState.showImage &&
+                activeIndex === index && (
+                  <div className="absolute bottom-28 right-6 z-30 flex gap-3 md:bottom-32 md:right-10">
+                    <button
+                      onClick={() => toggleMute(index)}
+                      className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-all hover:bg-white/20 border border-white/10 shadow-xl"
+                    >
+                      {videoState.isMuted ? (
+                        <VolumeX className="h-5 w-5 md:h-6 md:w-6" />
+                      ) : (
+                        <Volume2 className="h-5 w-5 md:h-6 md:w-6" />
+                      )}
+                    </button>
 
-                  <button
-                    onClick={() => skipTrailer(index)}
-                    className="flex items-center gap-2 rounded-full bg-black/40 px-4 py-2 md:px-6 text-xs md:text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 border border-white/10 shadow-xl"
-                  >
-                    <X className="h-3 w-3 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">Đóng trailer</span>
-                  </button>
-                </div>
-              )}
+                    <button
+                      onClick={() => skipTrailer(index)}
+                      className="flex items-center gap-2 rounded-full bg-black/40 px-4 py-2 md:px-6 text-xs md:text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 border border-white/10 shadow-xl"
+                    >
+                      <X className="h-3 w-3 md:h-4 md:w-4" />
+                      <span className="hidden sm:inline">Đóng trailer</span>
+                    </button>
+                  </div>
+                )}
             </SwiperSlide>
           );
         })}

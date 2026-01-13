@@ -30,7 +30,8 @@ function TrendingCard({ movie, rank }: { movie: Movie; rank: number }) {
       href={`/movies/${movie.slug}`}
       className="group relative flex aspect-2/3 flex-col overflow-hidden rounded-2xl bg-zinc-900 shadow-xl transition hover:-translate-y-1 hover:shadow-2xl cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}>
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className="absolute right-2 top-2 z-10">
         <span className="rounded bg-black/80 px-2 py-0.5 text-xs font-semibold text-white backdrop-blur-sm">
           HD
@@ -42,8 +43,9 @@ function TrendingCard({ movie, rank }: { movie: Movie; rank: number }) {
             src={movie.posterUrl}
             alt={movie.title}
             fill
-            className={`object-cover transition-transform duration-300 ${isHovered ? "scale-105" : "scale-100"
-              }`}
+            className={`object-cover transition-transform duration-300 ${
+              isHovered ? "scale-105" : "scale-100"
+            }`}
             sizes="(max-width: 768px) 200px, (max-width: 1024px) 220px, 240px"
           />
         ) : (
@@ -98,10 +100,9 @@ export default function TrendingMovies({
   }
 
   return (
-    <section className="space-y-4 px-6  pt-8 md:px-12 lg:px-16">
+    <section className="space-y-4 px-4 pt-8 sm:px-6 md:px-12 lg:px-16">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white md:text-3xl">{title}</h2>
-
       </div>
 
       <Carousel
@@ -109,12 +110,14 @@ export default function TrendingMovies({
           align: "start",
           loop: movies.length > 4,
         }}
-        className="w-full">
+        className="w-full"
+      >
         <CarouselContent className="-ml-3 md:-ml-4">
           {movies.map((movie, index) => (
             <CarouselItem
               key={movie.id}
-              className="pl-3 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/7">
+              className="pl-3 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-[14.28%]"
+            >
               <TrendingCard movie={movie} rank={index + 1} />
             </CarouselItem>
           ))}

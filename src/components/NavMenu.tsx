@@ -10,7 +10,7 @@ const navItems = [
   { label: "Danh sách của tôi", href: "/my-list" },
   { label: "Phim hành động", href: "/the-loai/hanh-dong" },
   { label: "Phim kinh dị", href: "/the-loai/kinh-di" },
-  { label: "Phim viễn tưởng", href: "/the-loai/vien-tuong" },
+
   { label: "Phim lãng mạn", href: "/the-loai/lang-man" },
   { label: "Phim hoạt hình", href: "/the-loai/hoat-hinh" },
   { label: "Phim chính kịch", href: "/the-loai/chinh-kich" },
@@ -39,7 +39,9 @@ export default function NavMenu({ scrolled }: NavMenuProps) {
   const update = () => {
     if (!containerRef.current) return;
 
-    const activeEl = containerRef.current.querySelector('[data-active="true"]') as HTMLElement;
+    const activeEl = containerRef.current.querySelector(
+      '[data-active="true"]'
+    ) as HTMLElement;
 
     if (activeEl) {
       const containerRect = containerRef.current.getBoundingClientRect();
@@ -48,19 +50,19 @@ export default function NavMenu({ scrolled }: NavMenuProps) {
       setIndicator({
         x: elRect.left - containerRect.left,
         width: elRect.width,
-        opacity: 1
+        opacity: 1,
       });
     } else {
-      setIndicator(prev => ({ ...prev, opacity: 0 }));
+      setIndicator((prev) => ({ ...prev, opacity: 0 }));
     }
   };
 
   useLayoutEffect(() => {
     update();
     const t = setTimeout(update, 200);
-    window.addEventListener('resize', update);
+    window.addEventListener("resize", update);
     return () => {
-      window.removeEventListener('resize', update);
+      window.removeEventListener("resize", update);
       clearTimeout(t);
     };
   }, [pathnameFromRouter, scrolled, mounted]);
@@ -68,11 +70,15 @@ export default function NavMenu({ scrolled }: NavMenuProps) {
   if (!mounted) return null;
 
   return (
-    <nav className="hidden lg:block h-full">
-      <ul ref={containerRef} className="flex items-center gap-1 list-none m-0 p-0 h-full relative">
+    <nav className="hidden 2xl:block h-full">
+      <ul
+        ref={containerRef}
+        className="flex items-center gap-1 list-none m-0 p-0 h-full relative"
+      >
         {navItems.map((item) => {
           const path = pathnameFromRouter || "/";
-          const isActive = item.href === "/" ? path === "/" : path.startsWith(item.href);
+          const isActive =
+            item.href === "/" ? path === "/" : path.startsWith(item.href);
 
           return (
             <li key={item.href} className="flex items-center h-full relative">
@@ -82,9 +88,10 @@ export default function NavMenu({ scrolled }: NavMenuProps) {
                 className={`
                   relative px-3 py-2 font-medium text-sm whitespace-nowrap
                   transition-all duration-300
-                  ${isActive
-                    ? "text-white"
-                    : scrolled
+                  ${
+                    isActive
+                      ? "text-white"
+                      : scrolled
                       ? "text-white/70 hover:text-white"
                       : "text-white/90 hover:text-white"
                   }
@@ -93,7 +100,8 @@ export default function NavMenu({ scrolled }: NavMenuProps) {
                   after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:bg-primary/60 
                   after:transition-all after:duration-300 after:-translate-x-1/2 after:w-0
                   ${!isActive ? "hover:after:w-full" : ""}
-                `}>
+                `}
+              >
                 {item.label}
               </Link>
             </li>

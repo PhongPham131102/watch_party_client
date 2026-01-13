@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil } from "lucide-react";
+import { Pencil, LogIn, UserPlus, User } from "lucide-react";
 import { useAuthStore } from "@/src/store/auth.store";
 import { useRouter } from "next/navigation";
 
@@ -77,19 +77,34 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
   if (!isAuthenticated) {
     return (
       <div className="flex items-center gap-3">
-        <button
-          onClick={() => openAuthModal("register")}
-          className={`rounded-lg px-4 py-2 text-sm font-bold transition-all duration-300 ${scrolled
-            ? "bg-white text-black hover:bg-gray-200 shadow-md"
-            : "bg-white/10 backdrop-blur-md border border-white/50 text-white hover:bg-white hover:text-black hover:border-white"
-            }`}>
-          Đăng ký
-        </button>
+        {/* Mobile: Show only Login Icon */}
         <button
           onClick={() => openAuthModal("login")}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 shadow-lg shadow-primary/20">
-          Đăng nhập
+          className="md:hidden p-2 text-white hover:bg-white/10 rounded-full transition-colors"
+          aria-label="Đăng nhập"
+        >
+          <User size={24} />
         </button>
+
+        {/* Desktop: Show full buttons */}
+        <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={() => openAuthModal("register")}
+            className={`rounded-lg px-4 py-2 text-sm font-bold transition-all duration-300 ${
+              scrolled
+                ? "bg-white text-black hover:bg-gray-200 shadow-md"
+                : "bg-white/10 backdrop-blur-md border border-white/50 text-white hover:bg-white hover:text-black hover:border-white"
+            }`}
+          >
+            Đăng ký
+          </button>
+          <button
+            onClick={() => openAuthModal("login")}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 shadow-lg shadow-primary/20"
+          >
+            Đăng nhập
+          </button>
+        </div>
       </div>
     );
   }
@@ -99,9 +114,13 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="cursor-pointer transition-opacity duration-300 hover:opacity-80"
-        aria-label="Menu người dùng">
+        aria-label="Menu người dùng"
+      >
         <Avatar className="cursor-pointer">
-          <AvatarImage src={user?.profile?.avatarUrl || "/avatar.png"} alt="User" />
+          <AvatarImage
+            src={user?.profile?.avatarUrl || "/avatar.png"}
+            alt="User"
+          />
           <AvatarFallback className="transition-colors duration-300 bg-white/20 text-white border-white/30">
             {user?.profile?.fullName?.charAt(0).toUpperCase() || "U"}
           </AvatarFallback>
@@ -116,7 +135,8 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
           onTouchMove={(e) => {
             e.stopPropagation();
           }}
-          className="absolute right-0 top-full mt-2 w-56 rounded-lg bg-black/95 backdrop-blur-sm border border-white/10 shadow-xl z-50 transition-all duration-200 ease-out">
+          className="absolute right-0 top-full mt-2 w-56 rounded-lg bg-black/95 backdrop-blur-sm border border-white/10 shadow-xl z-50 transition-all duration-200 ease-out"
+        >
           <div className="py-2">
             {menuItems.map((item, index) => (
               <div key={item.id}>
@@ -125,10 +145,12 @@ export default function HeaderAvatar({ scrolled }: HeaderAvatarProps) {
                 )}
                 <button
                   onClick={() => handleMenuItemClick(item)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left cursor-pointer transition-colors ${item.id === "logout"
-                    ? "text-white font-semibold justify-center hover:bg-primary"
-                    : "text-white/90 hover:bg-white/5"
-                    }`}>
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left cursor-pointer transition-colors ${
+                    item.id === "logout"
+                      ? "text-white font-semibold justify-center hover:bg-primary"
+                      : "text-white/90 hover:bg-white/5"
+                  }`}
+                >
                   {item.icon && <span className="shrink-0">{item.icon}</span>}
                   <span className="text-sm">{item.label}</span>
                 </button>
