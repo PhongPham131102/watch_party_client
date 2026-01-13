@@ -63,6 +63,16 @@ export default function MovieDetailView() {
     fetchFavorites,
   ]);
 
+  // Update page title
+  useEffect(() => {
+    if (movie?.title) {
+      document.title = `${movie.title} - Watch Party`;
+    }
+    return () => {
+      document.title = "Watch Party";
+    };
+  }, [movie?.title]);
+
   const description =
     movie?.description || "Thông tin phim đang được cập nhật.";
   const isLongDescription = description.length > 240;
